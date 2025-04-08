@@ -92,8 +92,8 @@ class Airspace:
                     self.counts[t, dep_block, traj_block] +=  1
                 last_t = t
         self.overloaded = self.counts.sum(axis=1)>np.ones((len(self.times), self.nb))*(self.capacities)
-        for i in range(self.nb):
-            self.counts[:,i,:] = np.multiply(self.counts[:,i,:], self.overloaded)
+        # for i in range(self.nb):
+        #     self.counts[:,i,:] = np.multiply(self.counts[:,i,:], self.overloaded)
         self.phi = np.trace(self.counts.sum(axis=0))
         return self.counts, self.phi
     
@@ -213,13 +213,13 @@ if __name__ == '__main__':
     CAPACITY = 2
     TIME_WINDOW = 2
     TIME_HORIZON = 20
-    NB_X = 2
-    NB_Y = 2
+    NB_X = 3
+    NB_Y = 3
     DX = 2
     DY = 2
     MAX_START_TIME = 10
     DT = 0.1
-    NB_FLIGHTS = 20
+    NB_FLIGHTS = 18
     NB_SECTORS = NB_X * NB_Y
     airspace = Airspace(NB_X, NB_Y, DX, DY, TIME_HORIZON, TIME_WINDOW, CAPACITY)
     flights = [Flight(airspace.centers, 1.0, MAX_START_TIME, DT) for i in range(NB_FLIGHTS)]
@@ -227,7 +227,7 @@ if __name__ == '__main__':
 
     # i = 0
     NEW_START_TIMES = np.arange(0, MAX_START_TIME, DT)
-    ACTIONS = np.array([-1,-0.5,0,0.5,1])
+    ACTIONS = np.array([-1,-0.5,0,0.5,1])*1
     # ACTIONS = np.array([-3,-2,-1,0,1,2,3])
     numFlights = instance.nb_flights
     
@@ -260,7 +260,6 @@ if __name__ == '__main__':
     # print(f"Nash equilibrium: {actionCombinations[minIdx]}, System cost: {nashCost}")
     # print(f"Optimal Cost: {optCost}")
     # print(f"Optimality Gap: {(nashCost-optCost)/optCost}")
-    
     # print(instance.block_ctrl(flights[1]))
     
     # Run BRD
