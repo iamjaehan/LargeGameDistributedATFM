@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import random
 import os
 from itertools import product
+import time
 
 from BRD import best_response_dynamics
 
@@ -113,7 +114,7 @@ class Flight:
         on the speed and duration of the flight.
         """
         i = random.randint(0, len(airports)-1)
-        j= random.randint(0, len(airports)-1)
+        j = random.randint(0, len(airports)-1)
         if j == i:
             j -= 1
         self.dep = airports[i]
@@ -219,7 +220,7 @@ if __name__ == '__main__':
     DY = 2
     MAX_START_TIME = 10
     DT = 0.1
-    NB_FLIGHTS = 18
+    NB_FLIGHTS = 6
     NB_SECTORS = NB_X * NB_Y
     airspace = Airspace(NB_X, NB_Y, DX, DY, TIME_HORIZON, TIME_WINDOW, CAPACITY)
     flights = [Flight(airspace.centers, 1.0, MAX_START_TIME, DT) for i in range(NB_FLIGHTS)]
@@ -238,31 +239,35 @@ if __name__ == '__main__':
         player_to_flights[player_id].append(flight_idx)
     
     # Brute Force
-    # actionCombinations = np.asarray(list(product(ACTIONS,repeat=numFlights)))
-    # numCombinations = len(actionCombinations)
-    # nominalStartTime = np.copy(instance.nominal_start_time)
+    bruteStartTime = time.time()
+    actionCombinations = np.asarray(list(product(ACTIONS,repeat=numFlights)))
+    numCombinations = len(actionCombinations)
+    nominalStartTime = np.copy(instance.nominal_start_time)
     
-    # overloaded = np.zeros(numCombinations)
-    # phi = np.zeros(numCombinations)
-    # totalCost = np.zeros(numCombinations)
-    # for i in range(numCombinations):
-    #     new_start_times = nominalStartTime + actionCombinations[i]
-    #     instance.update_flights(new_start_times)
-    #     overloaded[i] = instance.nb_overloaded()
-    #     totalCost[i] = np.sum(instance.counts)
-    #     phi[i] = instance.phi
+    overloaded = np.zeros(numCombinations)
+    phi = np.zeros(numCombinations)
+    totalCost = np.zeros(numCombinations)
+    for i in range(numCombinations):
+        new_start_times = nominalStartTime + actionCombinations[i]
+        instance.update_flights(new_start_times)
+        overloaded[i] = instance.nb_overloaded()
+        totalCost[i] = np.sum(instance.counts)
+        phi[i] = instance.phi
     
-    # minIndices = np.where(phi == np.min(phi))
-    # minIdx = minIndices[0][0]
-    # nashCost = totalCost[minIdx]
-    # optCost = np.min(totalCost)
-    # print(f"Minimum indices: {minIdx}")
-    # print(f"Nash equilibrium: {actionCombinations[minIdx]}, System cost: {nashCost}")
-    # print(f"Optimal Cost: {optCost}")
-    # print(f"Optimality Gap: {(nashCost-optCost)/optCost}")
-    # print(instance.block_ctrl(flights[1]))
+    minIndices = np.where(phi == np.min(phi))
+    minIdx = minIndices[0][0]
+    nashCost = totalCost[minIdx]
+    optCost = np.min(totalCost)
+    bruteEndTime = time.time()
+    print(f"Minimum indices: {minIdx}")
+    print(f"Nash equilibrium: {actionCombinations[minIdx]}, System cost: {nashCost}")
+    print(f"Optimal Cost: {optCost}")
+    print(f"Optimality Gap: {(nashCost-optCost)/optCost}")
+    print(f"Computation time: {bruteEndTime-bruteStartTime}")
+    print(instance.block_ctrl(flights[1]))
     
     # Run BRD
+    brdStartTime = time.time()
     final_times, final_action, system_cost, individual_costs = best_response_dynamics(
         instance=instance,
         nominal_start_time=instance.nominal_start_time,
@@ -271,22 +276,25 @@ if __name__ == '__main__':
         max_iter=100,
         verbose=True
     )
+    brdEndTime = time.time()
     
     print("\n[Best Response Dynamics Result]")
     print(f"Final Start Times: {final_times}")
     print(f"Final Action: {final_action}")
     print(f"System Cost: {system_cost}")
     print(f"Individual Costs: {individual_costs}")
+    print(f"BRD Computation time: {brdEndTime - brdStartTime}")
+    print(f"Brute Computation time: {bruteEndTime-bruteStartTime}")
     
     # Find the index in actionCombinations that matches final_action
-    # brd_index = np.where(np.all(np.isclose(actionCombinations, final_action, atol=1e-6), axis=1))[0]
+    brd_index = np.where(np.all(np.isclose(actionCombinations, final_action, atol=1e-6), axis=1))[0]
 
-    # if len(brd_index) > 0:
-    #     brd_index = brd_index[0]
-    #     print(f"BRD index found: {brd_index}")
-    # else:
-    #     brd_index = None
-    #     print("⚠️ BRD result not found in brute-force combinations.")
+    if len(brd_index) > 0:
+        brd_index = brd_index[0]
+        print(f"BRD index found: {brd_index}")
+    else:
+        brd_index = None
+        print("⚠️ BRD result not found in brute-force combinations.")
     
     # plt.figure()
     # plt.plot(range(numCombinations),totalCost, linestyle='--', marker='.', label="Total Cost", color="orange")
