@@ -26,9 +26,12 @@ for i = 1:length(indices)
     for j = 1:length(polygons)
         coords = polygons{j}/60;          % Nx2 [lon, lat]
         plotm(coords(:,2), coords(:,1), 'k','LineWidth',1.2);  % black outline
-        if sid == 112 || sid == 95 || sid == 10
-        % if sid == 16 || sid == 112 || sid == 243
-            plotm(coords(:,2), coords(:,1), 'r','LineWidth',4); 
+        % if sid == 112 || sid == 95 || sid == 10
+        if sid == 16 || sid == 112 || sid == 243
+        % if sid == 36|| sid == 37|| sid == 6
+        % if sid == 37|| sid == 38|| sid == 7
+            % plotm(coords(:,2), coords(:,1), 'r','LineWidth',4); 
+            plotm(coords(:,2), coords(:,1), 'Color',rand(3,1),'LineWidth',4); 
         end
     end
 end
@@ -39,9 +42,9 @@ grid on;
 
 flight_ids = cell2mat(keys(flight_paths));
 
-for i = 1:1
-    % flight_id = flight_ids(i);
-    flight_id = 263653925;
+for i = 1:100
+    flight_id = flight_ids(i);
+    % flight_id = 263653925;
     data = flight_paths(flight_id)/60;  % N×7 matrix
     x = data(:,4);
     y = data(:,5);

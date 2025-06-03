@@ -5,14 +5,16 @@ flight_paths = load("flight_paths.mat"); flight_paths = flight_paths.flight_path
 flight_sector_map = load("flight_sector_map.mat"); assigned_sector = flight_sector_map.flight_sector_map;
 flightn = length(controlledFlights);
 
+%% Environment setting
 % For smaller problem
-n = flightn;
+n = 200;
 flights = controlledFlights(1:n);
+
+capacity = 10;
 
 %% Environment identification
 % Identify simTime and involved sectors
 sector_ids = [];
-simTime = earliest:latest;
 earliest = inf;
 latest = 0;
 for i = 1:n
@@ -29,6 +31,7 @@ for i = 1:n
         latest = endTime;
     end
 end
+simTime = earliest:latest;
 sectorn= length(sector_ids);
 
 %% Compute the occupancy metric
@@ -39,22 +42,28 @@ for i = 1:n
     sectorNum = size(sectorMap,1);
     for j = 1:sectorNum
         idx = sectorMap(j,1);
-        localStart = sectorMap(j,2) - earliest + 1;
-        localEnd = sectorMap(j,3) - earliest +1;
+        localStart = round(sectorMap(j,2) - earliest + 1);
+        localEnd = round(sectorMap(j,3) - earliest +1);
         localIdx = find(sector_ids == idx);
         occupancyMatrix(localIdx, localStart:localEnd) = occupancyMatrix(localIdx, localStart:localEnd) + 1;
     end
 end
 
-figure(1); clf; hold on;
+hmSimTime = seconds(simTime);
+hmSimTime.Format = 'hh:mm';
+figure(2); clf; hold on;
 for i = 1:sectorn
-    plot(simTime,occupancyMatrix(i,:));
+    % plot(simTime,occupancyMatrix(i,:));
+    plot(hmSimTime,occupancyMatrix(i,:));
 end
+plot([seconds(0), seconds(3600*24-1)], [capacity, capacity],'r--')
 labels = arrayfun(@num2str, sector_ids, 'UniformOutput', false);
 legend(labels)
 grid on
 
 %% Declare overloaded area and time
+% Reduce the overload below 160
+
 
 %% Filter controllable flights
 
