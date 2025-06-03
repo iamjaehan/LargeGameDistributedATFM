@@ -26,9 +26,10 @@ for i = 1:length(indices)
     for j = 1:length(polygons)
         coords = polygons{j}/60;          % Nx2 [lon, lat]
         plotm(coords(:,2), coords(:,1), 'k','LineWidth',1.2);  % black outline
-        % if sid == 243 || sid == 112 || sid == 16
-        %     plotm(coords(:,2), coords(:,1), 'r','LineWidth',3);  % black outline
-        % end
+        if sid == 112 || sid == 95 || sid == 10
+        % if sid == 16 || sid == 112 || sid == 243
+            plotm(coords(:,2), coords(:,1), 'r','LineWidth',4); 
+        end
     end
 end
 xlabel('Longitude (Projected)');
@@ -38,9 +39,9 @@ grid on;
 
 flight_ids = cell2mat(keys(flight_paths));
 
-for i = 1:100
-    flight_id = flight_ids(i);
-    % flight_id = 263631696;
+for i = 1:1
+    % flight_id = flight_ids(i);
+    flight_id = 263653925;
     data = flight_paths(flight_id)/60;  % N×7 matrix
     x = data(:,4);
     y = data(:,5);

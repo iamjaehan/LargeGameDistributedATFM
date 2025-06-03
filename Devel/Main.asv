@@ -1,0 +1,23 @@
+% Load data
+controlledFlights = load("controlledFlights.mat"); controlledFlights = controlledFlights.controlledFlights;
+sectors = load("sectors.mat"); sector_id_order = sectors.sector_id_order; sectors = sectors.sectors;
+flight_paths = load("flight_paths.mat"); flight_paths = flight_paths.flight_paths;
+assigned_ = load("flight_sector_map.mat"); flight_sector_map = flight_sector_map.flight_sector_map;
+
+% For smaller problem
+n = 100;
+flights = controlledFlights(1:n);
+
+%% Declare overloaded area and time
+
+%% Filter controllable flights
+
+%% Search Equilibrium
+
+% - Sectors control affected flights
+% - We should choose an action that alleviates the overloaded space.
+% - Sectors choose the best response.
+% - Questions
+    % 1. How to escape infeasibility? - Soft constaint? Repair?
+    % 2. Threshold Public Goods Game?
+    % 3. Just say the cost is an overwhelmed cost?
