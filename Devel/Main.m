@@ -7,10 +7,10 @@ flightn = length(controlledFlights);
 
 %% Environment setting
 % For smaller problem
-n = 200;
+n = flightn;
 flights = controlledFlights(1:n);
 
-capacity = 10;
+capacity = 20;
 
 %% Environment identification
 % Identify simTime and involved sectors
@@ -32,10 +32,11 @@ for i = 1:n
     end
 end
 simTime = earliest:latest;
+timen = length(simTime);
 sectorn= length(sector_ids);
 
-%% Compute the occupancy metric
-occupancyMatrix = zeros(sectorn, length(simTime));
+%% Compute the initial occupancy metric
+occupancyMatrix = zeros(sectorn, timen);
 for i = 1:n
     fn = flights(i); % fn: flight number
     sectorMap = assigned_sector(fn);
@@ -48,7 +49,9 @@ for i = 1:n
         occupancyMatrix(localIdx, localStart:localEnd) = occupancyMatrix(localIdx, localStart:localEnd) + 1;
     end
 end
+initialOccupancyMatrix = occupancyMatrix;
 
+% Plot initial occupancy
 hmSimTime = seconds(simTime);
 hmSimTime.Format = 'hh:mm';
 figure(2); clf; hold on;
@@ -61,11 +64,17 @@ labels = arrayfun(@num2str, sector_ids, 'UniformOutput', false);
 legend(labels)
 grid on
 
+%% Identify control center for each flight
+controlCenter = int64.empty(n,0);
+for i = 1:n
+    fn = flights(i);
+    sectorMap = assigned_sector(fn);
+    controlCenter(i) = sectorMap(1,1);
+end
+
 %% Declare overloaded area and time
-% Reduce the overload below 160
+% Reduce the overload below capacity - 6
 
-
-%% Filter controllable flights
 
 %% Search Equilibrium
 
