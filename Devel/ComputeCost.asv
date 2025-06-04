@@ -2,7 +2,7 @@ function cost = ComputeCost(x, n, m, actionSet, occupancyMatrix, assigned_sector
 
 % Update occupancy Matrix based on x
 action = zeros(n,1);
-action(flightsUnderControl) = actionSet(x+3) - prevAction; %minute
+action(flightsUnderControl) = actionSet(x+3) - prevActi; %minute
 modifiedOccupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest);
 
 % Compute overload cost

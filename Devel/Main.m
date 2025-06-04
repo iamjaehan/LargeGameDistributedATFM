@@ -10,8 +10,8 @@ n = flightn;
 n = 100;
 flights = controlledFlights(1:n);
 
-capacity = 10;
-timeunit = 15; %minutes
+capacity = 5;
+timeunit = 30; %minutes
 epsilon = 1e-5;
 
 actionSet = -2:2; actionSet = actionSet * timeunit;
@@ -38,7 +38,7 @@ end
 earliest = earliest - timeunit*2; latest = latest + timeunit*2;
 simTime = earliest:latest;
 timen = length(simTime);
-m= length(sector_ids); %sectorn
+m = length(sector_ids); %sectorn
 
 %% Compute the initial occupancy metric
 occupancyMatrix = zeros(m, timen);
@@ -55,20 +55,10 @@ for i = 1:n
     end
 end
 initialOccupancyMatrix = occupancyMatrix;
+initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
 
 % Plot initial occupancy
-hmSimTime = seconds(simTime);
-hmSimTime.Format = 'hh:mm';
-figure(2); clf; hold on;
-for i = 1:m
-    % plot(simTime,occupancyMatrix(i,:));
-    plot(hmSimTime,occupancyMatrix(i,:));
-end
-plot([seconds(0), seconds(3600*24-1)], [capacity, capacity],'r--')
-labels = arrayfun(@num2str, sector_ids, 'UniformOutput', false);
-legend(labels)
-grid on
-drawnow;
+PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 2);
 
 %% Identify control center for each flight
 controlCenter = int64.empty(n,0);
@@ -81,6 +71,8 @@ end
 %% Search Equilibrium
 options = optimoptions('ga','Display','off');
 
+disp("BRD iteration: "+num2str(1))
+optAction = cell(m,1);
 for i = 1:m % Compute the Best Response for each sector
     sector_id = sector_ids(i);
     sectorIdx = i;
@@ -90,19 +82,42 @@ for i = 1:m % Compute the Best Response for each sector
     lb = -2*ones(n_c,1);
     ub = 2*ones(n_c,1);
     intcon = 1:n_c;
-
+    
+    prevAction = zeros(1,n_c);
+    if ~isempty(optAction{i})
+        prevAction = optAction{i};
+    end
+    % ga-based optimizer
     if n_c > 0
-        fitnessFcn = @(x) ComputeCost(x,n,m,actionSet,occupancyMatrix,assigned_sector,sector_ids,sectorIdx,capacity,flightsUnderControl,epsilon,flights,earliest);   
+        fitnessFcn = @(x) ComputeCost(x,n,m,actionSet,occupancyMatrix,assigned_sector,sector_ids,sectorIdx,capacity,flightsUnderControl,epsilon,flights,earliest,prevAction);   
         [opt_action, ~] = ga(fitnessFcn,n_c,[],[],[],[],lb,ub,[],intcon,options);
-        disp(["FIR ",num2str(sector_id)," action: ",num2str(opt_action)]);
+        optAction{i} = opt_action;
+        disp("FIR "+num2str(sector_id)+" action: "+num2str(opt_action));
         drawnow;
+    end
+    
+    % Update occupancyMatrix
+    if ~isempty(optAction{i})
+        action = zeros(n_c,1); action(flightsUnderControl) = optAction{i};
+        occupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest);
     end
 end
 
-% - Sectors control affected flights
-% - We should choose an action that alleviates the overloaded space.
-% - Sectors choose the best response.
-% - Questions
-    % 1. How to escape infeasibility? - Soft constaint? Repair?
-    % 2. Threshold Public Goods Game?
-    % 3. Just say the cost is an overwhelmed cost?
+PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
+PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
+
+initialOverloadCost
+postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity)
+
+%%
+
+% 
+% for i = 1:m
+%     if ~isempty(optAction{i})
+%         sector_id = sector_ids(i);
+%         sectorIdx = i;
+%         flightsUnderControl = find(controlCenter == sector_id); n_c = length(flightsUnderControl);
+%         action = zeros(n_c,1); action(flightsUnderControl) = optAction{i};
+%         occupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest);
+%     end
+% end
