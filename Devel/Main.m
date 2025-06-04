@@ -1,16 +1,20 @@
 % Load data
 controlledFlights = load("controlledFlights.mat"); controlledFlights = controlledFlights.controlledFlights;
-sectors = load("sectors.mat"); sector_id_order = sectors.sector_id_order; sectors = sectors.sectors;
+sectors = load("sectors.mat"); sectors = sectors.sectors;
 flight_paths = load("flight_paths.mat"); flight_paths = flight_paths.flight_paths;
 flight_sector_map = load("flight_sector_map.mat"); assigned_sector = flight_sector_map.flight_sector_map;
 flightn = length(controlledFlights);
 
 %% Environment setting
-% For smaller problem
 n = flightn;
+n = 100;
 flights = controlledFlights(1:n);
 
-capacity = 20;
+capacity = 10;
+timeunit = 15; %minutes
+epsilon = 1e-5;
+
+actionSet = -2:2; actionSet = actionSet * timeunit;
 
 %% Environment identification
 % Identify simTime and involved sectors
@@ -31,12 +35,13 @@ for i = 1:n
         latest = endTime;
     end
 end
+earliest = earliest - timeunit*2; latest = latest + timeunit*2;
 simTime = earliest:latest;
 timen = length(simTime);
-sectorn= length(sector_ids);
+m= length(sector_ids); %sectorn
 
 %% Compute the initial occupancy metric
-occupancyMatrix = zeros(sectorn, timen);
+occupancyMatrix = zeros(m, timen);
 for i = 1:n
     fn = flights(i); % fn: flight number
     sectorMap = assigned_sector(fn);
@@ -55,7 +60,7 @@ initialOccupancyMatrix = occupancyMatrix;
 hmSimTime = seconds(simTime);
 hmSimTime.Format = 'hh:mm';
 figure(2); clf; hold on;
-for i = 1:sectorn
+for i = 1:m
     % plot(simTime,occupancyMatrix(i,:));
     plot(hmSimTime,occupancyMatrix(i,:));
 end
@@ -63,6 +68,7 @@ plot([seconds(0), seconds(3600*24-1)], [capacity, capacity],'r--')
 labels = arrayfun(@num2str, sector_ids, 'UniformOutput', false);
 legend(labels)
 grid on
+drawnow;
 
 %% Identify control center for each flight
 controlCenter = int64.empty(n,0);
@@ -72,11 +78,26 @@ for i = 1:n
     controlCenter(i) = sectorMap(1,1);
 end
 
-%% Declare overloaded area and time
-% Reduce the overload below capacity - 6
-
-
 %% Search Equilibrium
+options = optimoptions('ga','Display','off');
+
+for i = 1:m % Compute the Best Response for each sector
+    sector_id = sector_ids(i);
+    sectorIdx = i;
+    flightsUnderControl = find(controlCenter == sector_id);
+    n_c = length(flightsUnderControl);
+
+    lb = -2*ones(n_c,1);
+    ub = 2*ones(n_c,1);
+    intcon = 1:n_c;
+
+    if n_c > 0
+        fitnessFcn = @(x) ComputeCost(x,n,m,actionSet,occupancyMatrix,assigned_sector,sector_ids,sectorIdx,capacity,flightsUnderControl,epsilon,flights,earliest);   
+        [opt_action, ~] = ga(fitnessFcn,n_c,[],[],[],[],lb,ub,[],intcon,options);
+        disp(["FIR ",num2str(sector_id)," action: ",num2str(opt_action)]);
+        drawnow;
+    end
+end
 
 % - Sectors control affected flights
 % - We should choose an action that alleviates the overloaded space.
