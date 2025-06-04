@@ -1,9 +1,10 @@
-function cost = ComputeCost(x, n, m, actionSet, occupancyMatrix, assigned_sector, sector_ids, sectorIdx, capacity, flightsUnderControl, epsilon, flights, earliest, prevAction)
+function cost = ComputeCost(x, n, m, actionSet, occupancyMatrix, assigned_sector, sector_ids, sectorIdx, capacity, flightsUnderControl, epsilon, flights, earliest, prevX, timeunit)
 
 % Update occupancy Matrix based on x
-action = zeros(n,1);
-action(flightsUnderControl) = actionSet(x+3) - prevAction; %minute
-modifiedOccupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest);
+action = zeros(n,1); prevAction = zeros(n,1);
+action(flightsUnderControl) = x - prevX; %minute
+prevAction(flightsUnderControl) = prevX;
+modifiedOccupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest, timeunit, prevAction);
 
 % Compute overload cost
 overloadCost = ComputeOverLoad(sectorIdx, modifiedOccupancyMatrix, capacity);

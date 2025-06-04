@@ -7,14 +7,15 @@ flightn = length(controlledFlights);
 
 %% Environment setting
 n = flightn;
-n = 100;
+n = 400;
 flights = controlledFlights(1:n);
 
-capacity = 5;
-timeunit = 30; %minutes
+capacity = 18;
+timeunit = 15; %minutes
 epsilon = 1e-5;
 
 actionSet = -2:2; actionSet = actionSet * timeunit;
+timeunit = timeunit * 60;
 
 %% Environment identification
 % Identify simTime and involved sectors
@@ -89,20 +90,20 @@ for i = 1:m % Compute the Best Response for each sector
     end
     % ga-based optimizer
     if n_c > 0
-        fitnessFcn = @(x) ComputeCost(x,n,m,actionSet,occupancyMatrix,assigned_sector,sector_ids,sectorIdx,capacity,flightsUnderControl,epsilon,flights,earliest,prevAction);   
+        fitnessFcn = @(x) ComputeCost(x,n,m,actionSet,occupancyMatrix,assigned_sector,sector_ids,sectorIdx,capacity,flightsUnderControl,epsilon,flights,earliest,prevAction,timeunit);   
         [opt_action, ~] = ga(fitnessFcn,n_c,[],[],[],[],lb,ub,[],intcon,options);
         optAction{i} = opt_action;
         disp("FIR "+num2str(sector_id)+" action: "+num2str(opt_action));
         drawnow;
     end
-    
     % Update occupancyMatrix
     if ~isempty(optAction{i})
         action = zeros(n_c,1); action(flightsUnderControl) = optAction{i};
-        occupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest);
+        prevActionVector = zeros(n,1);
+        prevActionVector(flightsUnderControl) = prevAction;
+        occupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest, timeunit, prevActionVector);
     end
 end
-
 PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
 PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
 
