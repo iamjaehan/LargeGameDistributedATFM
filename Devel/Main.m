@@ -74,6 +74,7 @@ options = optimoptions('ga','Display','off');
 
 disp("BRD iteration: "+num2str(1))
 optAction = cell(m,1);
+solveTime = zeros(m,1);
 for i = 1:m % Compute the Best Response for each sector
     sector_id = sector_ids(i);
     sectorIdx = i;
@@ -89,6 +90,7 @@ for i = 1:m % Compute the Best Response for each sector
         prevAction = optAction{i};
     end
     % ga-based optimizer
+    tic
     if n_c > 0
         fitnessFcn = @(x) ComputeCost(x,n,m,actionSet,occupancyMatrix,assigned_sector,sector_ids,sectorIdx,capacity,flightsUnderControl,epsilon,flights,earliest,prevAction,timeunit);   
         [opt_action, ~] = ga(fitnessFcn,n_c,[],[],[],[],lb,ub,[],intcon,options);
@@ -96,6 +98,7 @@ for i = 1:m % Compute the Best Response for each sector
         disp("FIR "+num2str(sector_id)+" action: "+num2str(opt_action));
         drawnow;
     end
+    solveTime(i) = toc;
     % Update occupancyMatrix
     if ~isempty(optAction{i})
         action = zeros(n_c,1); action(flightsUnderControl) = optAction{i};
