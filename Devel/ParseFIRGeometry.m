@@ -1,6 +1,6 @@
 function FIRs = ParseFIRGeometry()
 
-% --- Step 1: Parse .gsl ---
+% --- Step 1: Parse .gsl (FIRs only) ---
 fid = fopen('../Data/sectors_2307.gsl', 'r');
 gsl_lines = textscan(fid, '%s', 'Delimiter', '\n');
 fclose(fid);
@@ -12,6 +12,7 @@ while i <= length(gsl_lines)
     line = gsl_lines{i};
     if startsWith(line, 'S;')
         tokens = strsplit(line, ';');
+
         name = tokens{2};
         id = str2double(tokens{4});
         arc_ids = {};
@@ -28,6 +29,14 @@ while i <= length(gsl_lines)
         FIRs(end).arc_ids = arc_ids;
     else
         i = i + 1;
+    end
+end
+
+SectorNameList = {};
+for i = 1:length(gsl_lines)
+    if startsWith(gsl_lines{i}, 'S;')
+        tokens = strsplit(gsl_lines{i}, ';');
+        SectorNameList{end+1} = tokens{2};  % store sector name
     end
 end
 
@@ -74,5 +83,6 @@ for k = 1:length(FIRs)
 end
 
 save("FIRs.mat","FIRs")
+save("SectorNameList.mat","SectorNameList");
 
 end

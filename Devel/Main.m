@@ -1,16 +1,21 @@
 % Load data
 controlledFlights = load("controlledFlights.mat"); controlledFlights = controlledFlights.controlledFlights;
-sectors = load("sectors.mat"); sectors = sectors.sectors;
-flight_paths = load("flight_paths.mat"); flight_paths = flight_paths.flight_paths;
+% sectors = load("sectors.mat"); sectors = sectors.sectors;
+% flight_paths = load("flight_paths.mat"); flight_paths = flight_paths.flight_paths;
 flight_sector_map = load("flight_sector_map.mat"); assigned_sector = flight_sector_map.flight_sector_map;
 flightn = length(controlledFlights);
 
 %% Environment setting
 n = flightn;
-n = 400;
-flights = controlledFlights(1:n);
+n = 200;
 
-capacity = 18;
+if n < flightn
+    flights = controlledFlights(sort(randperm(flightn,n)));
+else
+    flights = controlledFlights(1:n);
+end
+
+capacity = 15;
 timeunit = 15; %minutes
 epsilon = 1e-5;
 
@@ -26,7 +31,7 @@ for i = 1:n
     fn = flights(i);
     sectorMap = assigned_sector(fn);
     sectorNum = size(sectorMap,1);
-    sector_ids = unique(vertcat(sector_ids,sectorMap(:,1)));
+    sector_ids = vertcat(sector_ids,sectorMap(:,1));
     startTime = sectorMap(1,2);
     endTime = sectorMap(sectorNum,3);
     if startTime < earliest
@@ -39,6 +44,8 @@ end
 earliest = earliest - timeunit*2; latest = latest + timeunit*2;
 simTime = earliest:latest;
 timen = length(simTime);
+sector_ids_test = sector_ids;
+sector_ids = unique(sector_ids);
 m = length(sector_ids); %sectorn
 
 %% Compute the initial occupancy metric
@@ -58,9 +65,6 @@ end
 initialOccupancyMatrix = occupancyMatrix;
 initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
 
-% Plot initial occupancy
-PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 2);
-
 %% Identify control center for each flight
 controlCenter = int64.empty(n,0);
 for i = 1:n
@@ -69,12 +73,28 @@ for i = 1:n
     controlCenter(i) = sectorMap(1,1);
 end
 
+%% Reduce problem size --- Further filter 'controlling sectors'
+% Need to modify m, OccuMat, initialOccuMat, initialOverloadCost,
+% sector_ids
+
+% controllingSectors = unique(controlCenter);
+% m = length(controllingSectors);
+% [~,controllingSectorsIdx] = ismember(controllingSectors, sector_ids);
+% occupancyMatrix = occupancyMatrix(controllingSectorsIdx,:);
+% sector_ids = controllingSectors;
+
+% Plot initial occupancy
+initialOccupancyMatrix = occupancyMatrix;
+initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
+PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 2);
+
 %% Search Equilibrium
-options = optimoptions('ga','Display','off');
+options = optimoptions('ga','Display','off','UseParallel', true, 'UseVectorized', false);
 
 disp("BRD iteration: "+num2str(1))
 optAction = cell(m,1);
 solveTime = zeros(m,1);
+
 for i = 1:m % Compute the Best Response for each sector
     sector_id = sector_ids(i);
     sectorIdx = i;
@@ -92,6 +112,7 @@ for i = 1:m % Compute the Best Response for each sector
     % ga-based optimizer
     tic
     if n_c > 0
+        disp("Solving a problem involving "+num2str(n_c)+" flights")
         fitnessFcn = @(x) ComputeCost(x,n,m,actionSet,occupancyMatrix,assigned_sector,sector_ids,sectorIdx,capacity,flightsUnderControl,epsilon,flights,earliest,prevAction,timeunit);   
         [opt_action, ~] = ga(fitnessFcn,n_c,[],[],[],[],lb,ub,[],intcon,options);
         optAction{i} = opt_action;

@@ -19,46 +19,46 @@ plotm(coastlat, coastlon, 'LineWidth', 1)
 hold on
 
 % Plot Sectors
-% indices = cell2mat(keys(sectors));
-% for i = 1:length(indices)
-%     sid = indices(i);                  % sector ID
-%     polygons = sectors(sid);           % cell array of polygons
-%     for j = 1:length(polygons)
-%         coords = polygons{j}/60;          % Nx2 [lon, lat]
-%         plotm(coords(:,2), coords(:,1), 'k','LineWidth',4);  % black outline
-%         % if sid == 16 || sid == 112 || sid == 243
-%         %     plotm(coords(:,2), coords(:,1), 'k--','LineWidth',4); 
-%         % end
-%     end
-% end
+indices = cell2mat(keys(sectors));
+for i = 1:length(indices)
+    sid = indices(i);                  % sector ID
+    polygons = sectors(sid);           % cell array of polygons
+    for j = 1:length(polygons)
+        coords = polygons{j}/60;          % Nx2 [lon, lat]
+        plotm(coords(:,2), coords(:,1), 'Color', [0.3, 0.3, 1.0], 'LineWidth', 1);  % black outline
+        % if sid == 16 || sid == 112 || sid == 243
+        %     plotm(coords(:,2), coords(:,1), 'k--','LineWidth',4); 
+        % end
+    end
+end
 xlabel('Longitude (Projected)');
 ylabel('Latitude (Projected)');
 title('Airspace Sectors');
 grid on;
 
 % Plot FIRs
-for i = 1:length(FIRs)
-    for j = 1:length(FIRs(i).polygons)
-        coords = FIRs(i).polygons{j};
-        plotm(coords(:,2), coords(:,1), 'Color', [0.3, 0.3, 1.0], 'LineWidth', 1.5);  % blueish outline
-        % if i == 14
-        %     plotm(coords(:,2), coords(:,1), 'r', 'LineWidth', 3);  % blueish outline
-        % end
-    end
-end
+% for i = 1:length(FIRs)
+%     for j = 1:length(FIRs(i).polygons)
+%         coords = FIRs(i).polygons{j};
+%         plotm(coords(:,2), coords(:,1), 'Color', [0.3, 0.3, 1.0], 'LineWidth', 1.5);  % blueish outline
+%         % if i == 14
+%         %     plotm(coords(:,2), coords(:,1), 'r', 'LineWidth', 3);  % blueish outline
+%         % end
+%     end
+% end
 
 % Plot Flights
-flight_ids = cell2mat(keys(flight_paths));
-for i = 1:100
-    flight_id = flight_ids(i);
-    % flight_id = 263608270;
-    data = flight_paths(flight_id)/60;  % N×7 matrix
-    x = data(:,4);
-    y = data(:,5);
-
-    plotm(y(1), x(1), 60, 'g.','MarkerSize',15);
-    plotm(y(end), x(end), 60, 'b.','MarkerSize',15);
-    plotm(y, x, 'r-', 'LineWidth', 2,'LineWidth',1.2); hold on;
-end
+% flight_ids = cell2mat(keys(flight_paths));
+% for i = 1:100
+%     flight_id = flight_ids(i);
+%     % flight_id = 263608270;
+%     data = flight_paths(flight_id)/60;  % N×7 matrix
+%     x = data(:,4);
+%     y = data(:,5);
+% 
+%     plotm(y(1), x(1), 60, 'g.','MarkerSize',15);
+%     plotm(y(end), x(end), 60, 'b.','MarkerSize',15);
+%     plotm(y, x, 'r-', 'LineWidth', 2,'LineWidth',1.2); hold on;
+% end
 axis equal;
 grid on;
