@@ -6,18 +6,21 @@ flight_sector_map = load("flight_sector_map.mat"); assigned_sector = flight_sect
 flightn = length(controlledFlights);
 
 %% Environment setting
-n = flightn;
-n = 200;
+% n = flightn;
+n = 100;
 
 if n < flightn
-    flights = controlledFlights(sort(randperm(flightn,n)));
+    % idd = sort(randperm(round(flightn/3),n))+round(flightn/10);
+    % idd =  sort(randperm(flightn,n));
+    % flights = controlledFlights(idd);
+    flights = controlledFlights(500:500+n);
 else
     flights = controlledFlights(1:n);
 end
 
-capacity = 15;
+capacity = 32;
 timeunit = 15; %minutes
-epsilon = 1e-5;
+epsilon = 1;
 
 actionSet = -2:2; actionSet = actionSet * timeunit;
 timeunit = timeunit * 60;
@@ -95,6 +98,7 @@ disp("BRD iteration: "+num2str(1))
 optAction = cell(m,1);
 solveTime = zeros(m,1);
 
+%% Iteration part
 for i = 1:m % Compute the Best Response for each sector
     sector_id = sector_ids(i);
     sectorIdx = i;
@@ -122,27 +126,27 @@ for i = 1:m % Compute the Best Response for each sector
     solveTime(i) = toc;
     % Update occupancyMatrix
     if ~isempty(optAction{i})
-        action = zeros(n_c,1); action(flightsUnderControl) = optAction{i};
+        action = zeros(n,1); action(flightsUnderControl) = optAction{i};
         prevActionVector = zeros(n,1);
         prevActionVector(flightsUnderControl) = prevAction;
         occupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest, timeunit, prevActionVector);
     end
+    checkCost = ComputeSystemCost(m, occupancyMatrix, capacity);
+    Cii = 0;
+    for k = 1:m
+        T_sector_id = sector_ids(k); T_sectorIdx = k; T_flightsUnderControl = find(controlCenter == T_sector_id);
+        localAction = zeros(n, 1); 
+        if ~isempty(optAction{k})
+            localAction(T_flightsUnderControl) = optAction{k};
+        end
+        Cii = Cii + ComputeSelfCost(T_sectorIdx, occupancyMatrix, controlCenter, sector_ids, flights, assigned_sector, localAction,earliest, timeunit);
+    end
+    potential = (1-epsilon) * Cii + epsilon * checkCost;
+    disp("Potential Cost: "+num2str(potential));
 end
 PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
 PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
 
-initialOverloadCost
-postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity)
-
-%%
-
-% 
-% for i = 1:m
-%     if ~isempty(optAction{i})
-%         sector_id = sector_ids(i);
-%         sectorIdx = i;
-%         flightsUnderControl = find(controlCenter == sector_id); n_c = length(flightsUnderControl);
-%         action = zeros(n_c,1); action(flightsUnderControl) = optAction{i};
-%         occupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest);
-%     end
-% end
+postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity);
+disp("Initial: "+num2str(initialOverloadCost)+" / Post: "+num2str(postAlgCost)+" / Potential: "+num2str(potential));
+disp("==========")

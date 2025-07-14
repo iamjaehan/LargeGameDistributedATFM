@@ -39,7 +39,8 @@ function fab = GetFABFromSectorIndex(idx, gsl_sector_names)
     if isKey(prefix_to_country, prefix)
         country = prefix_to_country(prefix);
         if isKey(country_to_fab, country)
-            fab = country_to_fab(country);
+            % fab = country_to_fab(country);
+            fab = country;
         else
             fab = 'Unknown-FAB';
         end

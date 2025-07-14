@@ -2,7 +2,8 @@ function cost = ComputeCost(x, n, m, actionSet, occupancyMatrix, assigned_sector
 
 % Update occupancy Matrix based on x
 action = zeros(n,1); prevAction = zeros(n,1);
-action(flightsUnderControl) = x - prevX; %minute
+% action(flightsUnderControl) = x - prevX; %minute -> CHECK
+action(flightsUnderControl) = x; %minute
 prevAction(flightsUnderControl) = prevX;
 modifiedOccupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest, timeunit, prevAction);
 

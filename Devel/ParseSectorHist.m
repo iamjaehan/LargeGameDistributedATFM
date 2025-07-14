@@ -6,9 +6,12 @@ function flight_sector_map = ParseSectorHist()
     lines = lines{1};
     
     SectorNameList = load("SectorNameList.mat"); SectorNameList = SectorNameList.SectorNameList;
+    % fab_name_to_index = containers.Map( ...
+    %     {'FABEC', 'UK-IRE', 'NE-FAB', 'DK-SE-FAB', 'SW-FAB'}, ...
+    %      1:5);
     fab_name_to_index = containers.Map( ...
-        {'FABEC', 'UK-IRE', 'NE-FAB', 'DK-SE-FAB', 'SW-FAB'}, ...
-         1:5);
+        {'Belgium', 'Denmark', 'France', 'Germany', 'Ireland', 'Netherlands', 'Norway', 'Portugal', 'Spain', 'Sweden', 'Switzerland', 'United Kingdom'}, ...
+         1:12);
 
 
     % First line is number of entries — optional check
@@ -39,8 +42,9 @@ function flight_sector_map = ParseSectorHist()
                 t_start   = str2double(parts{cursor+1});
                 t_end     = str2double(parts{cursor+2});
                 if t_end < t_start
-                    t_end = t_end + 86400; % If exceeds 24 hrs. Reset and terminate
-                    % data = [data; fab_idx, t_start, t_end];
+                    % t_end = t_end + 86400; % If exceeds 24 hrs. Reset and terminate
+                    t_end = t_end;
+                    data = [data; fab_idx, t_start, t_end];
                     break;
                 end
                 data = [data; fab_idx, t_start, t_end];
