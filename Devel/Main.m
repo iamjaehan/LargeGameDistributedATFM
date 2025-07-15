@@ -1,29 +1,36 @@
+clear all;
 % Load data
 controlledFlights = load("controlledFlights.mat"); controlledFlights = controlledFlights.controlledFlights;
-% sectors = load("sectors.mat"); sectors = sectors.sectors;
-% flight_paths = load("flight_paths.mat"); flight_paths = flight_paths.flight_paths;
 flight_sector_map = load("flight_sector_map.mat"); assigned_sector = flight_sector_map.flight_sector_map;
 flightn = length(controlledFlights);
 
 %% Environment setting
 % n = flightn;
-n = 100;
+n = 300;
+epsilon = 1;
+algorithm = 2; %1 - Ours, 2 - Centralized, 3 - FCFS
+% capacity = 23;
+capacity = 50;
+timeunit = 15; %minutes
+rng(10);  % fix seed
+
+timeStart = hours(7);
+timeEnd   = hours(10);
 
 if n < flightn
-    % idd = sort(randperm(round(flightn/3),n))+round(flightn/10);
+    % idd = sort(randperm(round(flightn/10),n));
     % idd =  sort(randperm(flightn,n));
     % flights = controlledFlights(idd);
-    flights = controlledFlights(500:500+n);
+    flights = controlledFlights(200:200+n);
 else
     flights = controlledFlights(1:n);
 end
 
-capacity = 32;
-timeunit = 15; %minutes
-epsilon = 1;
-
-actionSet = -2:2; actionSet = actionSet * timeunit;
+actionResolution = 4;
+actionSet = -actionResolution:actionResolution; actionSet = actionSet * timeunit;
 timeunit = timeunit * 60;
+
+rng('shuffle');
 
 %% Environment identification
 % Identify simTime and involved sectors
@@ -44,7 +51,7 @@ for i = 1:n
         latest = endTime;
     end
 end
-earliest = earliest - timeunit*2; latest = latest + timeunit*2;
+earliest = earliest - timeunit*actionResolution; latest = latest + timeunit*actionResolution;
 simTime = earliest:latest;
 timen = length(simTime);
 sector_ids_test = sector_ids;
@@ -91,17 +98,26 @@ initialOccupancyMatrix = occupancyMatrix;
 initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
 PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 2);
 
-%% Search Equilibrium
+%% Search Equilibrium (Ours)
+if algorithm == 1
 options = optimoptions('ga','Display','off','UseParallel', true, 'UseVectorized', false);
-
-disp("BRD iteration: "+num2str(1))
 optAction = cell(m,1);
 solveTime = zeros(m,1);
+potentialCost = inf;
+prevPotentialCost = inf;
+potentialCostOfLastRound = inf;
+roundCount = 0;
 
-%% Iteration part
+costHistory = [];
+potentialHistory = [];
+action = zeros(n,1);
+
+while true
+roundCount = roundCount + 1;
+disp("====== BRD iteration: "+num2str(roundCount)+" ======")
 for i = 1:m % Compute the Best Response for each sector
-    sector_id = sector_ids(i);
     sectorIdx = i;
+    sector_id = sector_ids(i);
     flightsUnderControl = find(controlCenter == sector_id);
     n_c = length(flightsUnderControl);
 
@@ -120,33 +136,181 @@ for i = 1:m % Compute the Best Response for each sector
         fitnessFcn = @(x) ComputeCost(x,n,m,actionSet,occupancyMatrix,assigned_sector,sector_ids,sectorIdx,capacity,flightsUnderControl,epsilon,flights,earliest,prevAction,timeunit);   
         [opt_action, ~] = ga(fitnessFcn,n_c,[],[],[],[],lb,ub,[],intcon,options);
         optAction{i} = opt_action;
-        disp("FIR "+num2str(sector_id)+" action: "+num2str(opt_action));
+        % disp("FIR "+num2str(sector_id)+" action: "+num2str(opt_action));
         drawnow;
     end
     solveTime(i) = toc;
     % Update occupancyMatrix
     if ~isempty(optAction{i})
-        action = zeros(n,1); action(flightsUnderControl) = optAction{i};
-        prevActionVector = zeros(n,1);
-        prevActionVector(flightsUnderControl) = prevAction;
-        occupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest, timeunit, prevActionVector);
+        action(flightsUnderControl) = optAction{i};
+        % prevActionVector = zeros(n,1);
+        % prevActionVector(flightsUnderControl) = prevAction;
+        % tempOccupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest, timeunit, prevActionVector);
+        % tempOccupancyMatrix = UpdateOccupancyMatrix(initialOccupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest, timeunit, prevActionVector);
+        tempOccupancyMatrix = UpdateOccupancyMatrix_Centralized(n, initialOccupancyMatrix, assigned_sector, sector_ids, action, flights, earliest, timeunit);
+    else
+        tempOccupancyMatrix = occupancyMatrix;
     end
-    checkCost = ComputeSystemCost(m, occupancyMatrix, capacity);
+
+    % Check viability
+    checkCost = ComputeSystemCost(m, tempOccupancyMatrix, capacity);
     Cii = 0;
     for k = 1:m
         T_sector_id = sector_ids(k); T_sectorIdx = k; T_flightsUnderControl = find(controlCenter == T_sector_id);
         localAction = zeros(n, 1); 
         if ~isempty(optAction{k})
             localAction(T_flightsUnderControl) = optAction{k};
-        end
-        Cii = Cii + ComputeSelfCost(T_sectorIdx, occupancyMatrix, controlCenter, sector_ids, flights, assigned_sector, localAction,earliest, timeunit);
+        end 
+        Cii = Cii + ComputeSelfCost(T_sectorIdx, tempOccupancyMatrix, controlCenter, sector_ids, flights, assigned_sector, localAction,earliest, timeunit);
     end
-    potential = (1-epsilon) * Cii + epsilon * checkCost;
-    disp("Potential Cost: "+num2str(potential));
+    potentialCost = (1-epsilon) * Cii + epsilon * checkCost;
+    disp("Potential Cost: "+num2str(potentialCost));
+    if potentialCost > prevPotentialCost
+        disp("Increased Potential Cost ==> Revert.")
+        optAction{i} = prevAction;
+        action(flightsUnderControl) = prevAction;
+    else
+        occupancyMatrix = tempOccupancyMatrix;
+        prevPotentialCost = potentialCost;
+    end
+    costHistory = vertcat(costHistory, checkCost);
+    potentialHistory = vertcat(potentialHistory, prevPotentialCost);
 end
+potentialCostOfThisRound = prevPotentialCost;
+if potentialCostOfThisRound == potentialCostOfLastRound || checkCost == 0
+    disp("Termination Condition Satisfied ==> Terminating")
+    break;
+end
+potentialCostOfLastRound = potentialCostOfThisRound;
+end
+
 PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
 PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
 
 postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity);
-disp("Initial: "+num2str(initialOverloadCost)+" / Post: "+num2str(postAlgCost)+" / Potential: "+num2str(potential));
+disp("Initial: "+num2str(initialOverloadCost)+" / Post: "+num2str(postAlgCost)+" / Potential: "+num2str(potentialCostOfThisRound));
 disp("==========")
+
+%% Centralized Algorithm
+elseif algorithm == 2
+options = optimoptions('ga','Display','off','UseParallel', true, 'UseVectorized', false);
+lb = -2*ones(n,1);
+ub = 2*ones(n,1);
+intcon = 1:n;
+
+disp("Solving a problem involving "+num2str(n)+" flights")
+
+tic
+fitnessFcn = @(x) ComputeCost_Centralized(x, n, m, actionSet, occupancyMatrix, assigned_sector, sector_ids, capacity, flights, earliest, timeunit, controlCenter);   
+[opt_action, postAlgCost] = ga(fitnessFcn,n,[],[],[],[],lb,ub,[],intcon,options);
+optAction = opt_action;
+solveTime = toc;
+
+occupancyMatrix = UpdateOccupancyMatrix_Centralized(n, occupancyMatrix, assigned_sector, sector_ids, optAction, flights, earliest, timeunit);
+
+PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
+PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
+
+postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity);
+disp("Initial: "+num2str(initialOverloadCost)+" / Post: "+num2str(postAlgCost));
+disp("==========")
+%% FCFS
+elseif algorithm == 3
+tic
+% 초기 설정
+flightDelays = zeros(n,1);  % action vector
+maxDelayStep = 4;
+delayOptions = 0:maxDelayStep;  % FCFS는 정방향만 보자
+occupancyMatrix = initialOccupancyMatrix;
+
+% 시간 설정
+startIdx = round(seconds(timeStart - seconds(earliest))) + 1;
+endIdx   = round(seconds(timeEnd   - seconds(earliest))) + 1;
+startIdx = max(1, startIdx);
+endIdx   = min(timen, endIdx);
+stepSize = 300; % 5분
+simStepIndices = startIdx:stepSize:endIdx;
+
+% 전체 시간, 섹터 순회
+stepLen = length(simStepIndices);
+count = 0;
+for t = simStepIndices
+    count = count + 1;
+    disp("CurStep: " + num2str(count) + " out of " + num2str(stepLen));
+    for s = 1:m
+        if occupancyMatrix(s,t) > capacity
+            % 1. 미래에 해당 sector로 진입할 예정인 flight 찾기
+            futureFlights = [];
+            futureTimes = [];
+            for i = 1:n
+                fn = flights(i);
+                sectorMap = assigned_sector(fn);
+                for j = 1:size(sectorMap,1)
+                    sectorID = sectorMap(j,1);
+                    entryTime = round(sectorMap(j,2) - earliest + 1 + flightDelays(i)*timeunit);
+                    if sectorID == sector_ids(s) && entryTime > t
+                        futureFlights(end+1) = i;
+                        futureTimes(end+1) = entryTime;
+                        break;
+                    end
+                end
+            end
+
+            % 2. entryTime 순으로 정렬 (FCFS)
+            [~, order] = sort(futureTimes);
+            orderedFlights = futureFlights(order);
+
+            % 3. 순서대로 delay 시도
+            for idx = 1:length(orderedFlights)
+                i = orderedFlights(idx);
+                delayApplied = false;
+                for d = delayOptions
+                    newDelay = flightDelays(i) + d;
+                    if newDelay > maxDelayStep
+                        continue;
+                    end
+                    testDelays = flightDelays;
+                    testDelays(i) = newDelay;
+                    tempOccu = UpdateOccupancyMatrix_Centralized(n, initialOccupancyMatrix, assigned_sector, sector_ids, testDelays, flights, earliest, timeunit);
+                    if tempOccu(s,t) <= capacity
+                        flightDelays(i) = newDelay;
+                        occupancyMatrix = tempOccu;
+                        delayApplied = true;
+                        break;
+                    end
+                end
+                % delay로도 해결 안되면 최대 delay 적용
+                if ~delayApplied
+                    flightDelays(i) = maxDelayStep;
+                    testDelays = flightDelays;
+                    tempOccu = UpdateOccupancyMatrix_Centralized(n, initialOccupancyMatrix, assigned_sector, sector_ids, testDelays, flights, earliest, timeunit);
+                    occupancyMatrix = tempOccu;
+                end
+                if occupancyMatrix(s,t) <= capacity
+                    break;
+                end
+            end
+        end
+    end
+end
+solveTime = toc;
+end
+% 결과 분석
+PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
+PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
+
+postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity);
+disp("Initial: " + num2str(initialOverloadCost) + " / Post: " + num2str(postAlgCost));
+
+%% Save result
+timestamp = datestr(now, 'mmdd_HHMMSS');
+if algorithm == 1
+    filename = "../Analysis/Ours_tight/TestData_"+timestamp;
+    save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+elseif algorithm == 2
+    filename = "../Analysis/Centralized_tight/TestData_"+timestamp;
+    save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+elseif algorithm == 3
+    filename = "../Analysis/FCFS_tight/TestData_"+timestamp;
+    save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+end

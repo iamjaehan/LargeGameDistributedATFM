@@ -12,9 +12,11 @@ overloadCost = ComputeOverLoad(sectorIdx, modifiedOccupancyMatrix, capacity);
 
 % Compute other's overload cost
 secondaryCost = 0;
-for i = 1:m
-    if sectorIdx ~= i
-        secondaryCost = secondaryCost + ComputeOverLoad(i, modifiedOccupancyMatrix, capacity);
+if epsilon ~= 0
+    for i = 1:m
+        if sectorIdx ~= i
+            secondaryCost = secondaryCost + ComputeOverLoad(i, modifiedOccupancyMatrix, capacity);
+        end
     end
 end
 
@@ -22,6 +24,3 @@ end
 cost = overloadCost + epsilon*secondaryCost;
 
 end
-
-% k = (x + 2)/4;
-% action(flightsUnderControl) = actionSet(1)*(1 - k) + actionSet(end)*k;

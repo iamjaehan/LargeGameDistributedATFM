@@ -42,8 +42,8 @@ function flight_sector_map = ParseSectorHist()
                 t_start   = str2double(parts{cursor+1});
                 t_end     = str2double(parts{cursor+2});
                 if t_end < t_start
-                    % t_end = t_end + 86400; % If exceeds 24 hrs. Reset and terminate
-                    t_end = t_end;
+                    % t_end = t_end s+ 86400; % If exceeds 24 hrs. Reset and terminate
+                    t_end = t_start;
                     data = [data; fab_idx, t_start, t_end];
                     break;
                 end
