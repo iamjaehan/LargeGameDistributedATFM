@@ -125,7 +125,7 @@ bar(compTime);
 grid on
 xticks(1:8)
 xticklabels(localLegend)
-ylabel("Computation Time [s]")
+ylabel("Computation Time")
 set(gca, 'FontSize', 20);
 title("Computation Time Comparison")
 saveas(gcf, '../Analysis/TimeComparison.png')
@@ -133,14 +133,8 @@ saveas(gcf, '../Analysis/TimeComparison.png')
 % Pareto Front
 figure(5)
 clf
-finalCost(6) = 1;
 semilogy(compTime,finalCost,'o','MarkerSize',10)
 grid on
 for i = 1:length(compTime)
-    text(compTime(i)+3,finalCost(i),localLegend{i},'FontSize',20)
+    text(compTime(i),finalCost(i),our)
 end
-xlabel("Computation Time [s]")
-ylabel("Final Overload Cost")
-title("Solution Quality to Time Pareto Front")
-set(gca, 'FontSize', 20);
-saveas(gcf, '../Analysis/ParetoFront.png')
