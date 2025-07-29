@@ -8,9 +8,9 @@ flightn = length(controlledFlights);
 % n = flightn;
 n = 300;
 epsilon = 1;
-algorithm = 2; %1 - Ours, 2 - Centralized, 3 - FCFS
-% capacity = 23;
-capacity = 50;
+algorithm = 1; %1 - Ours, 2 - Centralized, 3 - FCFS
+capacity = 20;
+% capacity = 10;
 timeunit = 15; %minutes
 rng(10);  % fix seed
 
@@ -19,14 +19,14 @@ timeEnd   = hours(10);
 
 if n < flightn
     % idd = sort(randperm(round(flightn/10),n));
-    % idd =  sort(randperm(flightn,n));
-    % flights = controlledFlights(idd);
-    flights = controlledFlights(200:200+n);
+    idd =  sort(randperm(flightn,n));
+    flights = controlledFlights(idd);
+    % flights = controlledFlights(200:200+n);
 else
     flights = controlledFlights(1:n);
 end
 
-actionResolution = 4;
+actionResolution = 2;
 actionSet = -actionResolution:actionResolution; actionSet = actionSet * timeunit;
 timeunit = timeunit * 60;
 
@@ -121,8 +121,8 @@ for i = 1:m % Compute the Best Response for each sector
     flightsUnderControl = find(controlCenter == sector_id);
     n_c = length(flightsUnderControl);
 
-    lb = -2*ones(n_c,1);
-    ub = 2*ones(n_c,1);
+    lb = -actionResolution*ones(n_c,1);
+    ub = actionResolution*ones(n_c,1);
     intcon = 1:n_c;
     
     prevAction = zeros(1,n_c);
@@ -193,9 +193,17 @@ disp("==========")
 
 %% Centralized Algorithm
 elseif algorithm == 2
-options = optimoptions('ga','Display','off','UseParallel', true, 'UseVectorized', false);
-lb = -2*ones(n,1);
-ub = 2*ones(n,1);
+% options = optimoptions('ga', ...
+%     'PopulationSize', 200, ...             % Larger search diversity
+%     'MaxGenerations', 300, ...             % Give it time to converge
+%     'EliteCount', 5, ...                   % Preserve top solutions
+%     'CrossoverFraction', 0.8, ...          % Balance exploration/exploitation
+%     'MutationFcn', {@mutationgaussian, 0.2, 0.5}, ... % Larger mutation range
+%     'UseParallel', true, ...
+%     'Display', 'iter');
+options = optimoptions('ga','UseParallel',true,'Display','off');
+lb = -actionResolution*ones(n,1);
+ub = actionResolution*ones(n,1);
 intcon = 1:n;
 
 disp("Solving a problem involving "+num2str(n)+" flights")
@@ -303,14 +311,38 @@ postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity);
 disp("Initial: " + num2str(initialOverloadCost) + " / Post: " + num2str(postAlgCost));
 
 %% Save result
-timestamp = datestr(now, 'mmdd_HHMMSS');
-if algorithm == 1
-    filename = "../Analysis/Ours_tight/TestData_"+timestamp;
-    save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
-elseif algorithm == 2
-    filename = "../Analysis/Centralized_tight/TestData_"+timestamp;
-    save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
-elseif algorithm == 3
-    filename = "../Analysis/FCFS_tight/TestData_"+timestamp;
-    save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
-end
+% timestamp = datestr(now, 'mmdd_HHMMSS');
+% if algorithm == 1
+%     filename = "../Analysis/Ours_tight/TestData_"+timestamp;
+%     save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% elseif algorithm == 2
+%     filename = "../Analysis/Centralized_tight/TestData_"+timestamp;
+%     save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% elseif algorithm == 3
+%     filename = "../Analysis/FCFS_tight/TestData_"+timestamp;
+%     save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% end
+
+% timestamp = datestr(now, 'mmdd_HHMMSS');
+% if algorithm == 1
+%     filename = "../Analysis/Ours/TestData_"+timestamp;
+%     save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% elseif algorithm == 2
+%     filename = "../Analysis/Centralized/TestData_"+timestamp;
+%     save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% elseif algorithm == 3
+%     filename = "../Analysis/FCFS/TestData_"+timestamp;
+%     save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% end
+
+% timestamp = datestr(now, 'mmdd_HHMMSS');
+% if algorithm == 1
+%     filename = "../Analysis/Ours_distributed/TestData_"+timestamp;
+%     save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% elseif algorithm == 2
+%     filename = "../Analysis/Centralized_distributed/TestData_"+timestamp;
+%     save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% elseif algorithm == 3
+%     filename = "../Analysis/FCFS_distributed/TestData_"+timestamp;
+%     save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% end

@@ -4,7 +4,8 @@ initCost = 173953;
 
 % Load Ours
 folderPath = '../Analysis/Ours'; 
-folderPath = '../Analysis/Ours_tight'; 
+% folderPath = '../Analysis/Ours_tight'; 
+folderPath = '../Analysis/Ours_distributed'; 
 matFiles = dir(fullfile(folderPath, '*.mat'));
 oursLen = length(matFiles);
 ours = cell(oursLen,1);
@@ -21,7 +22,7 @@ ColorList = lines(oursLen);
 
 % Load Centralized
 folderPath = '../Analysis/Centralized'; 
-folderPath = '../Analysis/Centralized_tight'; 
+folderPath = '../Analysis/Centralized_distributed'; 
 matFiles = dir(fullfile(folderPath, '*.mat'));
 cent = cell(length(matFiles),1);
 for k = 1:length(matFiles)
@@ -32,7 +33,7 @@ end
 
 % Load FCFS
 folderPath = '../Analysis/FCFS'; 
-folderPath = '../Analysis/FCFS_tight'; 
+folderPath = '../Analysis/FCFS_distributed'; 
 matFiles = dir(fullfile(folderPath, '*.mat'));
 fcfs = cell(length(matFiles),1);
 for k = 1:length(matFiles)
@@ -56,6 +57,7 @@ end
 % Cost Evolution History
 ours{end}.costHistory = ours{end}.potentialHistory;
 figure(1)
+set(gcf, 'Position', [100, 100, 800, 700]);  % Set figure size in pixels
 clf
 for i = 1:oursLen
     x = 0:1/ours{i}.m:ours{i}.roundCount;
@@ -70,12 +72,14 @@ legend(oursLegend,'Location','best')
 set(gca, 'FontSize', 20);
 saveas(gcf, '../Analysis/CostEvolution.png')
 
-xlim([1 inf])
-ylim([0 200])
-saveas(gcf, '../Analysis/CostEvolution_Enlarged.png')
+% xlim([1 inf])
+% set(gcf, 'Position', [100, 100, 800, 800]);  % Set figure size in pixels
+% ylim([0 200])
+% saveas(gcf, '../Analysis/CostEvolution_Enlarged.png')
 
 % Potential Cost Evolution History
 figure(2)
+set(gcf, 'Position', [100, 100, 800, 700]);  % Set figure size in pixels
 clf
 for i = 1:oursLen
     x = 0:1/ours{i}.m:ours{i}.roundCount;
@@ -98,6 +102,7 @@ end
 finalCost = vertcat(finalCost,cent{1}.postAlgCost);
 finalCost = vertcat(finalCost,fcfs{1}.postAlgCost);
 figure(3)
+set(gcf, 'Position', [100, 100, 800, 700]);  % Set figure size in pixels
 clf
 bar(log10(finalCost));
 grid on
@@ -120,6 +125,7 @@ end
 compTime = vertcat(compTime, cent{1}.solveTime);
 compTime = vertcat(compTime, fcfs{1}.solveTime);
 figure(4)
+set(gcf, 'Position', [100, 100, 800, 700]);  % Set figure size in pixels
 clf
 bar(compTime);
 grid on
@@ -132,8 +138,13 @@ saveas(gcf, '../Analysis/TimeComparison.png')
 
 % Pareto Front
 figure(5)
+set(gcf, 'Position', [100, 100, 800, 700]);  % Set figure size in pixels
 clf
-finalCost(6) = 1;
+for i = 1:length(finalCost)
+    if finalCost(i)==0
+        finalCost(i) = finalCost(i) + 1;
+    end
+end
 semilogy(compTime,finalCost,'o','MarkerSize',10)
 grid on
 for i = 1:length(compTime)
@@ -144,3 +155,7 @@ ylabel("Final Overload Cost")
 title("Solution Quality to Time Pareto Front")
 set(gca, 'FontSize', 20);
 saveas(gcf, '../Analysis/ParetoFront.png')
+
+%% Plotting
+% idx = 6;
+% PlotOccupancy(ours{idx}.occupancyMatrix, ours{idx}.simTime, ours{idx}.sector_ids, ours{idx}.m, ours{idx}.capacity, 7)
