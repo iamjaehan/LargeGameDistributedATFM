@@ -96,9 +96,9 @@ end
 % sector_ids = controllingSectors;
 
 % Plot initial occupancy
-initialOccupancyMatrix = occupancyMatrix;
-initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
-PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 2);
+% initialOccupancyMatrix = occupancyMatrix;
+% initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
+% PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 2);
 
 %% Search Equilibrium (Ours)
 if algorithm == 1

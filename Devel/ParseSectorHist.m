@@ -20,7 +20,7 @@ function flight_sector_map = ParseSectorHist()
     % Initialize: flight_sector_map: containers.Map<flight_id, Nx3 matrix>
     % Each row: [sector_id, t_start, t_end]
     flight_sector_map = containers.Map('KeyType', 'int64', 'ValueType', 'any');
-
+    
     for i = 2:length(lines)
         parts = strsplit(strtrim(lines{i}));
         if isempty(parts)
@@ -33,6 +33,8 @@ function flight_sector_map = ParseSectorHist()
             cursor      = 6;                     % start of sector data
 
             data = [];
+            t_start = 0;
+            t_end = 0;
             for j = 1:num_sectors
                 sector_id = str2double(parts{cursor});
                 % Get FAB name → index
@@ -40,6 +42,9 @@ function flight_sector_map = ParseSectorHist()
                 fab_idx  = fab_name_to_index(fab_name);
 
                 t_start   = str2double(parts{cursor+1});
+                if t_start < t_end
+                    break;
+                end
                 t_end     = str2double(parts{cursor+2});
                 if t_end < t_start
                     % t_end = t_end s+ 86400; % If exceeds 24 hrs. Reset and terminate
@@ -56,6 +61,8 @@ function flight_sector_map = ParseSectorHist()
             continue;  % Skip malformed lines
         end
     end
+
+
 
     save("flight_sector_map.mat", "flight_sector_map");
 end
