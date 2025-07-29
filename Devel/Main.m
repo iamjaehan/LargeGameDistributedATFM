@@ -12,7 +12,7 @@ flightn = length(controlledFlights);
 % capacity = 20;
 
 timeunit = 15; %minutes
-% rng(10);  % fix seed
+rng(10);  % fix seed
 
 timeStart = hours(7);
 timeEnd   = hours(10);
