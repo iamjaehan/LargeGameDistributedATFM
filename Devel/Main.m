@@ -1,4 +1,4 @@
-clear all;
+% clear all;
 % Load data
 controlledFlights = load("controlledFlights.mat"); controlledFlights = controlledFlights.controlledFlights;
 flight_sector_map = load("flight_sector_map.mat"); assigned_sector = flight_sector_map.flight_sector_map;
@@ -6,13 +6,13 @@ flightn = length(controlledFlights);
 
 %% Environment setting
 % n = flightn;
-n = 300;
-epsilon = 1;
-algorithm = 1; %1 - Ours, 2 - Centralized, 3 - FCFS
-capacity = 20;
-% capacity = 10;
+% n = 300;
+% epsilon = 1;
+% algorithm = 1; %1 - Ours, 2 - Centralized, 3 - FCFS
+% capacity = 20;
+
 timeunit = 15; %minutes
-rng(10);  % fix seed
+% rng(10);  % fix seed
 
 timeStart = hours(7);
 timeEnd   = hours(10);
@@ -73,6 +73,8 @@ for i = 1:n
     end
 end
 initialOccupancyMatrix = occupancyMatrix;
+maxOccupancy = max(initialOccupancyMatrix(:));
+capacity = round(maxOccupancy * 0.73);
 initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
 
 %% Identify control center for each flight
@@ -100,7 +102,7 @@ PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 2);
 
 %% Search Equilibrium (Ours)
 if algorithm == 1
-options = optimoptions('ga','Display','off','UseParallel', true, 'UseVectorized', false);
+options = optimoptions('ga','Display','off','UseParallel', false, 'UseVectorized', false);
 optAction = cell(m,1);
 solveTime = zeros(m,1);
 potentialCost = inf;
@@ -201,7 +203,7 @@ elseif algorithm == 2
 %     'MutationFcn', {@mutationgaussian, 0.2, 0.5}, ... % Larger mutation range
 %     'UseParallel', true, ...
 %     'Display', 'iter');
-options = optimoptions('ga','UseParallel',true,'Display','off');
+options = optimoptions('ga','UseParallel',false,'Display','off');
 lb = -actionResolution*ones(n,1);
 ub = actionResolution*ones(n,1);
 intcon = 1:n;
@@ -346,3 +348,15 @@ disp("Initial: " + num2str(initialOverloadCost) + " / Post: " + num2str(postAlgC
 %     filename = "../Analysis/FCFS_distributed/TestData_"+timestamp;
 %     save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
 % end
+
+timestamp = datestr(now, 'mmdd_HHMMSS');
+if algorithm == 1 && epsilon == 1
+    filename = "../Analysis/Ours_nTest/TestData_"+timestamp+"_"+n;
+    save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+elseif algorithm == 1 && epsilon == 0
+    filename = "../Analysis/NonCoop_nTest/TestData_"+timestamp+"_"+n;
+    save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+elseif algorithm == 2
+    filename = "../Analysis/Centralized_nTest/TestData_"+timestamp+"_"+n;
+    save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+end
