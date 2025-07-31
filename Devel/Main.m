@@ -74,7 +74,7 @@ for i = 1:n
 end
 initialOccupancyMatrix = occupancyMatrix;
 maxOccupancy = max(initialOccupancyMatrix(:));
-capacity = round(maxOccupancy * 0.73);
+capacity = round(maxOccupancy * 0.2);
 initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
 
 %% Identify control center for each flight
@@ -351,12 +351,12 @@ disp("Initial: " + num2str(initialOverloadCost) + " / Post: " + num2str(postAlgC
 
 timestamp = datestr(now, 'mmdd_HHMMSS');
 if algorithm == 1 && epsilon == 1
-    filename = "../Analysis/Ours_nTest/TestData_"+timestamp+"_"+n;
+    filename = "../Analysis/Ours_nTest_tight/TestData_"+timestamp+"_"+n;
     save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
 elseif algorithm == 1 && epsilon == 0
-    filename = "../Analysis/NonCoop_nTest/TestData_"+timestamp+"_"+n;
+    filename = "../Analysis/NonCoop_nTest_tight/TestData_"+timestamp+"_"+n;
     save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
 elseif algorithm == 2
-    filename = "../Analysis/Centralized_nTest/TestData_"+timestamp+"_"+n;
+    filename = "../Analysis/Centralized_nTest_tight/TestData_"+timestamp+"_"+n;
     save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
 end

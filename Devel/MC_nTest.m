@@ -1,5 +1,5 @@
 clear all
-nCaseSet = [10, 300, 1000, 3000, 10000];
+nCaseSet = [10, 30, 100,  300, 1000, 3000];
 
 caseNum = length(nCaseSet);
 for i = 1:caseNum
