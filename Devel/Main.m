@@ -6,10 +6,10 @@ flightn = length(controlledFlights);
 
 %% Environment setting
 % n = flightn;
-% n = 300;
-% epsilon = 1;
-% algorithm = 1; %1 - Ours, 2 - Centralized, 3 - FCFS
-% capacity = 20;
+n = 300;
+epsilon = 1;
+algorithm = 1; %1 - Ours, 2 - Centralized, 3 - FCFS
+capacity = 50;
 
 timeunit = 15; %minutes
 rng(10);  % fix seed
@@ -19,9 +19,9 @@ timeEnd   = hours(10);
 
 if n < flightn
     % idd = sort(randperm(round(flightn/10),n));
-    idd =  sort(randperm(flightn,n));
-    flights = controlledFlights(idd);
-    % flights = controlledFlights(200:200+n);
+    % idd =  sort(randperm(flightn,n));
+    % flights = controlledFlights(idd);
+    flights = controlledFlights(200:200+n);
 else
     flights = controlledFlights(1:n);
 end
@@ -74,7 +74,7 @@ for i = 1:n
 end
 initialOccupancyMatrix = occupancyMatrix;
 maxOccupancy = max(initialOccupancyMatrix(:));
-capacity = round(maxOccupancy * 0.2);
+% capacity = round(maxOccupancy * 0.73);
 initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
 
 %% Identify control center for each flight
@@ -98,7 +98,7 @@ end
 % Plot initial occupancy
 % initialOccupancyMatrix = occupancyMatrix;
 % initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
-% PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 2);
+PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 2);
 
 %% Search Equilibrium (Ours)
 if algorithm == 1
@@ -140,15 +140,13 @@ for i = 1:m % Compute the Best Response for each sector
         optAction{i} = opt_action;
         % disp("FIR "+num2str(sector_id)+" action: "+num2str(opt_action));
         drawnow;
+    else
+        continue;
     end
     solveTime(i) = toc;
     % Update occupancyMatrix
     if ~isempty(optAction{i})
         action(flightsUnderControl) = optAction{i};
-        % prevActionVector = zeros(n,1);
-        % prevActionVector(flightsUnderControl) = prevAction;
-        % tempOccupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest, timeunit, prevActionVector);
-        % tempOccupancyMatrix = UpdateOccupancyMatrix(initialOccupancyMatrix, assigned_sector, sector_ids, action, flightsUnderControl, flights, earliest, timeunit, prevActionVector);
         tempOccupancyMatrix = UpdateOccupancyMatrix_Centralized(n, initialOccupancyMatrix, assigned_sector, sector_ids, action, flights, earliest, timeunit);
     else
         tempOccupancyMatrix = occupancyMatrix;
@@ -195,14 +193,6 @@ disp("==========")
 
 %% Centralized Algorithm
 elseif algorithm == 2
-% options = optimoptions('ga', ...
-%     'PopulationSize', 200, ...             % Larger search diversity
-%     'MaxGenerations', 300, ...             % Give it time to converge
-%     'EliteCount', 5, ...                   % Preserve top solutions
-%     'CrossoverFraction', 0.8, ...          % Balance exploration/exploitation
-%     'MutationFcn', {@mutationgaussian, 0.2, 0.5}, ... % Larger mutation range
-%     'UseParallel', true, ...
-%     'Display', 'iter');
 options = optimoptions('ga','UseParallel',false,'Display','off');
 lb = -actionResolution*ones(n,1);
 ub = actionResolution*ones(n,1);
@@ -304,13 +294,6 @@ for t = simStepIndices
     end
 end
 solveTime = toc;
-end
-% 결과 분석
-PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
-PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
-
-postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity);
-disp("Initial: " + num2str(initialOverloadCost) + " / Post: " + num2str(postAlgCost));
 
 %% Save result
 % timestamp = datestr(now, 'mmdd_HHMMSS');
