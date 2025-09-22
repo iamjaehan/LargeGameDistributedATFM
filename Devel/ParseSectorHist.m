@@ -1,6 +1,7 @@
 function flight_sector_map = ParseSectorHist()
     % Read the .SECTOR_LIST file
-    fid = fopen('../Data/general_initial_flow_NW_SW_Axis.SECTOR_LIST', 'r');
+    % fid = fopen('../Data/general_initial_flow_NW_SW_Axis.SECTOR_LIST', 'r');
+    fid = fopen('../Data_4/BREST230726.SECTOR_LIST', 'r');
     lines = textscan(fid, '%s', 'Delimiter', '\n');
     fclose(fid);
     lines = lines{1};
@@ -29,8 +30,12 @@ function flight_sector_map = ParseSectorHist()
 
         try
             flight_id   = str2double(parts{1});
-            num_sectors = str2double(parts{5});  % correct index
-            cursor      = 6;                     % start of sector data
+            num_sectors = str2double(parts{6});  % correct index
+            cursor      = 7;                     % start of sector data
+
+            % WARNING! ---- Use this for older data ---- WARNING!
+            % num_sectors = str2double(parts{5});  % correct index
+            % cursor      = 6;                     % start of sector data
 
             data = [];
             t_start = 0;
@@ -39,7 +44,8 @@ function flight_sector_map = ParseSectorHist()
                 sector_id = str2double(parts{cursor});
                 % Get FAB name → index
                 fab_name = GetFABFromSectorIndex(sector_id, SectorNameList);
-                fab_idx  = fab_name_to_index(fab_name);
+                % fab_idx  = fab_name_to_index(fab_name);
+                fab_idx = sector_id;
 
                 t_start   = str2double(parts{cursor+1});
                 if t_start < t_end
@@ -61,8 +67,6 @@ function flight_sector_map = ParseSectorHist()
             continue;  % Skip malformed lines
         end
     end
-
-
 
     save("flight_sector_map.mat", "flight_sector_map");
 end

@@ -5,13 +5,12 @@ flight_sector_map = load("flight_sector_map.mat"); assigned_sector = flight_sect
 flightn = length(controlledFlights);
 
 %% Environment setting
-% n = flightn;
-n = 300;
-epsilon = 1;
-algorithm = 1; %1 - Ours, 2 - Centralized, 3 - FCFS
-capacity = 50;
+n = flightn;
+% epsilon = 1;
+% algorithm = 3; %1 - Ours, 2 - Centralized, 3 - FCFS
+capacity = 10;
 
-timeunit = 15; %minutes
+timeunit = 5; %minutes
 rng(10);  % fix seed
 
 timeStart = hours(7);
@@ -19,15 +18,16 @@ timeEnd   = hours(10);
 
 if n < flightn
     % idd = sort(randperm(round(flightn/10),n));
-    % idd =  sort(randperm(flightn,n));
-    % flights = controlledFlights(idd);
-    flights = controlledFlights(200:200+n);
+    idd =  sort(randperm(flightn,n));
+    flights = controlledFlights(idd);
+    % flights = controlledFlights(200:200+n);
 else
     flights = controlledFlights(1:n);
 end
 
 actionResolution = 2;
-actionSet = -actionResolution:actionResolution; actionSet = actionSet * timeunit;
+% actionSet = -actionResolution:actionResolution; actionSet = actionSet * timeunit;
+actionSet = 0:actionResolution*3; actionSet = actionSet * timeunit;
 timeunit = timeunit * 60;
 
 rng('shuffle');
@@ -51,7 +51,7 @@ for i = 1:n
         latest = endTime;
     end
 end
-earliest = earliest - timeunit*actionResolution; latest = latest + timeunit*actionResolution;
+earliest = earliest - timeunit*actionResolution; latest = latest + timeunit*actionResolution * 6;
 simTime = earliest:latest;
 timen = length(simTime);
 sector_ids_test = sector_ids;
@@ -98,7 +98,8 @@ end
 % Plot initial occupancy
 % initialOccupancyMatrix = occupancyMatrix;
 % initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
-PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 2);
+
+% PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 2);
 
 %% Search Equilibrium (Ours)
 if algorithm == 1
@@ -123,8 +124,10 @@ for i = 1:m % Compute the Best Response for each sector
     flightsUnderControl = find(controlCenter == sector_id);
     n_c = length(flightsUnderControl);
 
-    lb = -actionResolution*ones(n_c,1);
-    ub = actionResolution*ones(n_c,1);
+    % lb = -actionResolution*ones(n_c,1);
+    % ub = actionResolution*ones(n_c,1);
+    lb = zeros(n_c,1);
+    ub = 6*ones(n_c,1);
     intcon = 1:n_c;
     
     prevAction = zeros(1,n_c);
@@ -175,6 +178,9 @@ for i = 1:m % Compute the Best Response for each sector
     end
     costHistory = vertcat(costHistory, checkCost);
     potentialHistory = vertcat(potentialHistory, prevPotentialCost);
+    if checkCost == 0
+        break;
+    end
 end
 potentialCostOfThisRound = prevPotentialCost;
 if potentialCostOfThisRound == potentialCostOfLastRound || checkCost == 0
@@ -184,8 +190,8 @@ end
 potentialCostOfLastRound = potentialCostOfThisRound;
 end
 
-PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
-PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
+% PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
+% PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
 
 postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity);
 disp("Initial: "+num2str(initialOverloadCost)+" / Post: "+num2str(postAlgCost)+" / Potential: "+num2str(potentialCostOfThisRound));
@@ -194,8 +200,10 @@ disp("==========")
 %% Centralized Algorithm
 elseif algorithm == 2
 options = optimoptions('ga','UseParallel',false,'Display','off');
-lb = -actionResolution*ones(n,1);
-ub = actionResolution*ones(n,1);
+% lb = -actionResolution*ones(n,1);
+% ub = actionResolution*ones(n,1);
+lb = -actionResolution*zeros(n,1);
+ub = 6*ones(n,1);
 intcon = 1:n;
 
 disp("Solving a problem involving "+num2str(n)+" flights")
@@ -208,8 +216,8 @@ solveTime = toc;
 
 occupancyMatrix = UpdateOccupancyMatrix_Centralized(n, occupancyMatrix, assigned_sector, sector_ids, optAction, flights, earliest, timeunit);
 
-PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
-PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
+% PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
+% PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
 
 postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity);
 disp("Initial: "+num2str(initialOverloadCost)+" / Post: "+num2str(postAlgCost));
@@ -294,6 +302,14 @@ for t = simStepIndices
     end
 end
 solveTime = toc;
+end
+
+% PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
+% PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
+
+postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity);
+disp("Initial: "+num2str(initialOverloadCost)+" / Post: "+num2str(postAlgCost));
+disp("==========")
 
 %% Save result
 % timestamp = datestr(now, 'mmdd_HHMMSS');
@@ -332,14 +348,26 @@ solveTime = toc;
 %     save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
 % end
 
+% timestamp = datestr(now, 'mmdd_HHMMSS');
+% if algorithm == 1 && epsilon == 1
+%     filename = "../Analysis/Ours_nTest_tight/TestData_"+timestamp+"_"+n;
+%     save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% elseif algorithm == 1 && epsilon == 0
+%     filename = "../Analysis/NonCoop_nTest_tight/TestData_"+timestamp+"_"+n;
+%     save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% elseif algorithm == 2
+%     filename = "../Analysis/Centralized_nTest_tight/TestData_"+timestamp+"_"+n;
+%     save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% end
+
 timestamp = datestr(now, 'mmdd_HHMMSS');
-if algorithm == 1 && epsilon == 1
-    filename = "../Analysis/Ours_nTest_tight/TestData_"+timestamp+"_"+n;
-    save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
-elseif algorithm == 1 && epsilon == 0
-    filename = "../Analysis/NonCoop_nTest_tight/TestData_"+timestamp+"_"+n;
+if algorithm == 1
+    filename = "../Analysis/Ours_real_kTest/TestData_"+timestamp;
     save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
 elseif algorithm == 2
-    filename = "../Analysis/Centralized_nTest_tight/TestData_"+timestamp+"_"+n;
+    filename = "../Analysis/Centralized_real_kTest/TestData_"+timestamp;
     save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+elseif algorithm == 3
+    filename = "../Analysis/FCFS_real_kTest/TestData_"+timestamp;
+    save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
 end

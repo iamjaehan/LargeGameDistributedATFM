@@ -1,7 +1,8 @@
 function FIRs = ParseFIRGeometry()
 
 % --- Step 1: Parse .gsl (FIRs only) ---
-fid = fopen('../Data/sectors_2307.gsl', 'r');
+% fid = fopen('../Data/sectors_2307.gsl', 'r');
+fid = fopen('../Data_4/BREST.gsl', 'r');
 gsl_lines = textscan(fid, '%s', 'Delimiter', '\n');
 fclose(fid);
 gsl_lines = gsl_lines{1};
@@ -42,6 +43,7 @@ end
 
 % --- Step 2: Parse .gar arcs ---
 fid = fopen('../Data/sectors_2307.gar', 'r');
+% fid = fopen('../Data_4/BREST.gar', 'r');
 gar_lines = textscan(fid, '%s', 'Delimiter', '\n');
 fclose(fid);
 gar_lines = gar_lines{1};
