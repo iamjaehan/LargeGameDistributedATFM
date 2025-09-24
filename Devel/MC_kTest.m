@@ -36,7 +36,7 @@ for i = 1:iterNum
 end
 
 for i = 1
-    algorithm = 3; % Centralized solution
+    algorithm = 3; % FCFS solution
     disp("*** FCFS. Iteration: "+num2str(i)+" ***")
     run("Main.m")
 end
