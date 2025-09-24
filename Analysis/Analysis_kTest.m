@@ -1,10 +1,10 @@
 % Load Ours
 folderPath = 'Ours_real_kTest'; 
 matFiles = dir(fullfile(folderPath, '*.mat'));
-oursLen = length(matFiles);
-ours = cell(oursLen-3,1);
-for k = 1:oursLen-3
-    fileName = fullfile(folderPath, matFiles(k+1).name);
+oursLen = 40;
+ours = cell(oursLen,1);
+for k = 1:oursLen
+    fileName = fullfile(folderPath, matFiles(k+40).name);
     data = load(fileName);
     ours{k} = data;
 end
@@ -12,10 +12,10 @@ end
 % Load Centralized
 folderPath = 'Centralized_real_kTest'; 
 matFiles = dir(fullfile(folderPath, '*.mat'));
-centLen = length(matFiles)-1;
+centLen = 10;
 cent = cell(centLen,1);
 for k = 1:centLen
-    fileName = fullfile(folderPath, matFiles(k+1).name);
+    fileName = fullfile(folderPath, matFiles(k+10).name);
     data = load(fileName);
     cent{k} = data;
 end
@@ -23,10 +23,10 @@ end
 % Load FCFS
 folderPath = 'FCFS_real_kTest'; 
 matFiles = dir(fullfile(folderPath, '*.mat'));
-fcfsLen = length(matFiles);
+fcfsLen = 1;
 fcfs = cell(fcfsLen,1);
-for k = 1:1
-    fileName = fullfile(folderPath, matFiles(k).name);
+for k = 1:fcfsLen
+    fileName = fullfile(folderPath, matFiles(k+1).name);
     data = load(fileName);
     fcfs{k} = data;
 end
