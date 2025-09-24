@@ -8,7 +8,7 @@ flightn = length(controlledFlights);
 n = flightn;
 % epsilon = 1;
 % algorithm = 3; %1 - Ours, 2 - Centralized, 3 - FCFS
-capacity = 10;
+capacity = 9;
 
 timeunit = 5; %minutes
 rng(10);  % fix seed
@@ -103,7 +103,7 @@ end
 
 %% Search Equilibrium (Ours)
 if algorithm == 1
-options = optimoptions('ga','Display','off','UseParallel', true, 'UseVectorized', false);
+options = optimoptions('ga','Display','off','UseParallel', false, 'UseVectorized', false);
 optAction = cell(m,1);
 solveTime = zeros(m,1);
 potentialCost = inf;
@@ -199,7 +199,7 @@ disp("==========")
 
 %% Centralized Algorithm
 elseif algorithm == 2
-options = optimoptions('ga','UseParallel', true,'Display','off');
+options = optimoptions('ga','UseParallel', false,'Display','off');
 % lb = -actionResolution*ones(n,1);
 % ub = actionResolution*ones(n,1);
 lb = -actionResolution*zeros(n,1);
