@@ -5,10 +5,12 @@ flight_sector_map = load("flight_sector_map.mat"); assigned_sector = flight_sect
 flightn = length(controlledFlights);
 
 %% Environment setting
-n = flightn;
+% testName = "real_nTest";
+
+% n = flightn;
 % epsilon = 1;
-% algorithm = 3; %1 - Ours, 2 - Centralized, 3 - FCFS
-capacity = 9;
+% algorithm = 1; %1 - Ours, 2 - Centralized, 3 - FCFS
+% capacity = 9;
 
 timeunit = 5; %minutes
 rng(10);  % fix seed
@@ -74,7 +76,7 @@ for i = 1:n
 end
 initialOccupancyMatrix = occupancyMatrix;
 maxOccupancy = max(initialOccupancyMatrix(:));
-% capacity = round(maxOccupancy * 0.73);
+capacity = round(maxOccupancy * 0.70);
 initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
 
 %% Identify control center for each flight
@@ -103,7 +105,7 @@ end
 
 %% Search Equilibrium (Ours)
 if algorithm == 1
-options = optimoptions('ga','Display','off','UseParallel', false, 'UseVectorized', false);
+options = optimoptions('ga','Display','off','UseParallel', true, 'UseVectorized', false);
 optAction = cell(m,1);
 solveTime = zeros(m,1);
 potentialCost = inf;
@@ -199,7 +201,7 @@ disp("==========")
 
 %% Centralized Algorithm
 elseif algorithm == 2
-options = optimoptions('ga','UseParallel', false,'Display','off');
+options = optimoptions('ga','UseParallel', true,'Display','off');
 % lb = -actionResolution*ones(n,1);
 % ub = actionResolution*ones(n,1);
 lb = -actionResolution*zeros(n,1);
@@ -360,14 +362,38 @@ disp("==========")
 %     save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
 % end
 
+% timestamp = datestr(now, 'mmdd_HHMMSS');
+% if algorithm == 1
+%     filename = "../Analysis/Ours_real_kTest/TestData_"+timestamp;
+%     save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% elseif algorithm == 2
+%     filename = "../Analysis/Centralized_real_kTest/TestData_"+timestamp;
+%     save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% elseif algorithm == 3
+%     filename = "../Analysis/FCFS_real_kTest/TestData_"+timestamp;
+%     save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% end
+
 timestamp = datestr(now, 'mmdd_HHMMSS');
 if algorithm == 1
-    filename = "../Analysis/Ours_real_kTest/TestData_"+timestamp;
+    filename = "../Analysis/Ours_"+testName+"/TestData_"+timestamp;
+    folder = fileparts(filename);
+    if ~isempty(folder) && ~exist(folder, 'dir')
+        mkdir(folder);
+    end
     save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
 elseif algorithm == 2
-    filename = "../Analysis/Centralized_real_kTest/TestData_"+timestamp;
+    filename = "../Analysis/Centralized_"+testName+"/TestData_"+timestamp;
+    folder = fileparts(filename);
+    if ~isempty(folder) && ~exist(folder, 'dir')
+        mkdir(folder);
+    end
     save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
 elseif algorithm == 3
-    filename = "../Analysis/FCFS_real_kTest/TestData_"+timestamp;
+    filename = "../Analysis/FCFS_"+testName+"/TestData_"+timestamp;
+    folder = fileparts(filename);
+    if ~isempty(folder) && ~exist(folder, 'dir')
+        mkdir(folder);
+    end
     save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
 end

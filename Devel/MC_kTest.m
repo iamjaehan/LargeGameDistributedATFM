@@ -1,5 +1,6 @@
 clear all
 iterNum = 10;
+testName = "real_kTest";
 
 for i = 1:iterNum
     epsilon = 0;

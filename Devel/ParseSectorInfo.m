@@ -4,8 +4,8 @@ function [sectors, sector_id_order] = ParseSectorInfo()
 %   sector_id_order: List of sector_ids in the order they appear in the file
 
     % Read the .are file
-    % fid = fopen('../Data/sectors_2307.are', 'r');
-    fid = fopen('../Data_4/BREST.are', 'r');
+    fid = fopen('../Data/sectors_2307.are', 'r');
+    % fid = fopen('../Data_4/BREST.are', 'r');
     lines = textscan(fid, '%s', 'Delimiter', '\n');
     fclose(fid);
     lines = lines{1};
