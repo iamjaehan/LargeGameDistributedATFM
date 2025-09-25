@@ -93,8 +93,7 @@ ylabel("Overload Cost [Aircraft · min]")
 set(gcf, 'Position', [100, 100, 800, 700]);  % Set figure size in pixels
 set(gca,'LineWidth',1.5)
 h = findobj(gca,'Tag','Box');
-set(h,'LineWidth',1.5)
-% exportgraphics(gca,'../Analysis/FinalCostComparison_2.eps', 'Resolution',300);
+set(h,'L')
 exportgraphics(gca,'../Analysis/FinalCostComparison.eps', 'Resolution',300);
 
 figure(2)
@@ -104,7 +103,7 @@ hold on
 boxplot(avgCompTime(:,1:4),'Positions',1:4,'Colors','k')
 h = findobj(gca,'Tag','Box');
 h2 = findobj(gca,'Tag','Median');
-set(h, 'LineWidth', 1.5)
+set(h, 'LineWidth', 1)
 set(h(1:4), 'LineStyle', '-.')
 set(h2(1:4),'Color','r')
 grid on
@@ -116,7 +115,6 @@ xtickangle(0)
 title("Total Computation Time Comparison")
 ylabel("Computation Time [s]")
 set(gcf, 'Position', [900, 100, 800, 700]);  % Set figure size in pixels
-% exportgraphics(gca,'../Analysis/TimeComparison_2.eps', 'Resolution',300);
 exportgraphics(gca,'../Analysis/TimeComparison.eps', 'Resolution',300);
 
 %%
@@ -137,14 +135,13 @@ for i = 1:length(compTimeAvg)
 end
 title("Pareto Front")
 xlabel("Computation Time [s]")
-ylabel("Final Overload Cost [Aircraft · min]")
+ylabel("Final Overload Cost [Aircraft · minutes]")
 grid on
 set(gcf, 'Position', [300, 100, 800, 700]);  % Set figure size in pixels
 set(gca, 'FontSize', fontsize, 'FontName', 'Times New Roman','TickLabelInterpreter','latex');
 set(gca,'XScale','log')
-% exportgraphics(gca,'../Analysis/ParetoFront_2.eps')
+saveas(gcf, '../Analysis/ParetoFront.eps')
 set(gca,'LineWidth',1.5)
-exportgraphics(gca,'../Analysis/ParetoFront.eps', 'Resolution',300);
 
 figure(4)
 clf
@@ -165,12 +162,7 @@ xlabel("Computation Time [s]")
 ylabel("Final Overload Cost [Aircraft · min]")
 xlim([400 900])
 ylim([-1 7])
-% xlim([700 1000])
-% ylim([-1 25])
 grid on
 set(gcf, 'Position', [300, 100, 800, 700]);  % Set figure size in pixels
-set(gca,'XScale','log')
 set(gca, 'FontSize', fontsize, 'FontName', 'Times New Roman','TickLabelInterpreter','latex');
-% saveas(gcf, '../Analysis/ParetoFront_enlarged_2.eps')
-% exportgraphics(gca,'../Analysis/ParetoFront_enlarged_2.eps')
-exportgraphics(gca,'../Analysis/ParetoFront_enlarged.eps', 'Resolution',300);
+saveas(gcf, '../Analysis/ParetoFront_enlarged.eps')
