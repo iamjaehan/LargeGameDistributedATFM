@@ -142,8 +142,9 @@ grid on
 set(gcf, 'Position', [300, 100, 800, 700]);  % Set figure size in pixels
 set(gca, 'FontSize', fontsize, 'FontName', 'Times New Roman','TickLabelInterpreter','latex');
 set(gca,'XScale','log')
-% exportgraphics(gca,'../Analysis/ParetoFront_2.eps')
+
 set(gca,'LineWidth',1.5)
+% exportgraphics(gca,'../Analysis/ParetoFront_2.eps', 'Resolution',300);
 exportgraphics(gca,'../Analysis/ParetoFront.eps', 'Resolution',300);
 
 figure(4)
@@ -160,7 +161,7 @@ end
 for i = 1:length(compTimeAvg)
     line([compTimeAvg(i), compTimeAvg(i)], [finalCostAvg(i)-finalCostStd(i), finalCostAvg(i)+finalCostStd(i)], 'Color', 'k');
 end
-title("Pareto Front")
+% title("Pareto Front")
 xlabel("Computation Time [s]")
 ylabel("Final Overload Cost [Aircraft · min]")
 xlim([400 900])
@@ -171,6 +172,8 @@ grid on
 set(gcf, 'Position', [300, 100, 800, 700]);  % Set figure size in pixels
 set(gca,'XScale','log')
 set(gca, 'FontSize', fontsize, 'FontName', 'Times New Roman','TickLabelInterpreter','latex');
-% saveas(gcf, '../Analysis/ParetoFront_enlarged_2.eps')
+
 % exportgraphics(gca,'../Analysis/ParetoFront_enlarged_2.eps')
 exportgraphics(gca,'../Analysis/ParetoFront_enlarged.eps', 'Resolution',300);
+
+%%
