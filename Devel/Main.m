@@ -7,10 +7,10 @@ flightn = length(controlledFlights);
 %% Environment setting
 % testName = "real_nTest";
 
-n = flightn; 
-epsilon = 0;
-algorithm = 3; %1 - Ours, 2 - Centralized, 3 - FCFS
-capacity = 10;
+% n = flightn; 
+% epsilon = 0;
+% algorithm = 3; %1 - Ours, 2 - Centralized, 3 - FCFS
+% capacity = 7;
 
 timeunit = 5; %minutes
 rng(10);  % fix seed
@@ -374,26 +374,26 @@ disp("==========")
 %     save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
 % end
 
-% timestamp = datestr(now, 'mmdd_HHMMSS');
-% if algorithm == 1
-%     filename = "../Analysis/Ours_"+testName+"/TestData_"+timestamp;
-%     folder = fileparts(filename);
-%     if ~isempty(folder) && ~exist(folder, 'dir')
-%         mkdir(folder);
-%     end
-%     save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
-% elseif algorithm == 2
-%     filename = "../Analysis/Centralized_"+testName+"/TestData_"+timestamp;
-%     folder = fileparts(filename);
-%     if ~isempty(folder) && ~exist(folder, 'dir')
-%         mkdir(folder);
-%     end
-%     save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
-% elseif algorithm == 3
-%     filename = "../Analysis/FCFS_"+testName+"/TestData_"+timestamp;
-%     folder = fileparts(filename);
-%     if ~isempty(folder) && ~exist(folder, 'dir')
-%         mkdir(folder);
-%     end
-%     save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
-% end
+timestamp = datestr(now, 'mmdd_HHMMSS');
+if algorithm == 1
+    filename = "../Analysis/Ours_"+testName+"/TestData_"+timestamp;
+    folder = fileparts(filename);
+    if ~isempty(folder) && ~exist(folder, 'dir')
+        mkdir(folder);
+    end
+    save(filename,'m',"postAlgCost",'potentialHistory','costHistory','roundCount','epsilon','optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+elseif algorithm == 2
+    filename = "../Analysis/Centralized_"+testName+"/TestData_"+timestamp;
+    folder = fileparts(filename);
+    if ~isempty(folder) && ~exist(folder, 'dir')
+        mkdir(folder);
+    end
+    save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+elseif algorithm == 3
+    filename = "../Analysis/FCFS_"+testName+"/TestData_"+timestamp;
+    folder = fileparts(filename);
+    if ~isempty(folder) && ~exist(folder, 'dir')
+        mkdir(folder);
+    end
+    save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+end
