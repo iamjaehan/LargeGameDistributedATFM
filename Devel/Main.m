@@ -7,7 +7,7 @@ flightn = length(controlledFlights);
 %% Environment setting
 % testName = "real_nTest";
 
-% n = flightn; 
+n = flightn; 
 % epsilon = 0;
 % algorithm = 3; %1 - Ours, 2 - Centralized, 3 - FCFS
 % capacity = 7;
