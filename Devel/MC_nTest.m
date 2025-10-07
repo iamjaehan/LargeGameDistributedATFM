@@ -22,10 +22,6 @@ for i = 1:caseNum
         algorithm = 2; % Centralized solution
         disp("Centralized with "+num2str(n)+" players.")
         run("Main.m")
-
-        algorithm = 3; % FCFS solution
-        disp("FCFS with "+num2str(n)+" players.")
-        run("Main.m")
     end
 end
 toc(origT)
