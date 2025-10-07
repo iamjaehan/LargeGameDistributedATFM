@@ -4,7 +4,8 @@ matFiles = dir(fullfile(folderPath, '*.mat'));
 oursLen = 40;
 ours = cell(oursLen,1);
 for k = 1:oursLen
-    fileName = fullfile(folderPath, matFiles(k+40).name);
+    % fileName = fullfile(folderPath, matFiles(k+40).name);
+    fileName = fullfile(folderPath, matFiles(k+80).name);
     % fileName = fullfile(folderPath, matFiles(k).name);
     data = load(fileName);
     ours{k} = data;
@@ -16,7 +17,8 @@ matFiles = dir(fullfile(folderPath, '*.mat'));
 centLen = 10;
 cent = cell(centLen,1);
 for k = 1:centLen
-    fileName = fullfile(folderPath, matFiles(k+10).name);
+    % fileName = fullfile(folderPath, matFiles(k+10).name);
+    fileName = fullfile(folderPath, matFiles(k+20).name);
     % fileName = fullfile(folderPath, matFiles(k).name);
     data = load(fileName);
     cent{k} = data;
@@ -28,7 +30,8 @@ matFiles = dir(fullfile(folderPath, '*.mat'));
 fcfsLen = 1;
 fcfs = cell(fcfsLen,1);
 for k = 1:fcfsLen
-    fileName = fullfile(folderPath, matFiles(k+1).name);
+    % fileName = fullfile(folderPath, matFiles(k+1).name);
+    fileName = fullfile(folderPath, matFiles(k+2).name);
     % fileName = fullfile(folderPath, matFiles(k).name);
     data = load(fileName);
     fcfs{k} = data;
@@ -94,7 +97,7 @@ set(gcf, 'Position', [100, 100, 800, 700]);  % Set figure size in pixels
 set(gca,'LineWidth',1.5)
 h = findobj(gca,'Tag','Box');
 set(h,'LineWidth',1.5)
-exportgraphics(gca,'../Analysis/FinalCostComparison_2.eps', 'Resolution',300);
+% exportgraphics(gca,'../Analysis/FinalCostComparison_2.eps', 'Resolution',300);
 % exportgraphics(gca,'../Analysis/FinalCostComparison.eps', 'Resolution',300);
 
 figure(2)
@@ -116,7 +119,7 @@ xtickangle(0)
 title("Computation Time Comparison")
 ylabel("Computation Time [s]")
 set(gcf, 'Position', [900, 100, 800, 700]);  % Set figure size in pixels
-exportgraphics(gca,'../Analysis/TimeComparison_2.eps', 'Resolution',300);
+% exportgraphics(gca,'../Analysis/TimeComparison_2.eps', 'Resolution',300);
 % exportgraphics(gca,'../Analysis/TimeComparison.eps', 'Resolution',300);
 
 %%
@@ -144,7 +147,7 @@ set(gca, 'FontSize', fontsize, 'FontName', 'Times New Roman','TickLabelInterpret
 set(gca,'XScale','log')
 
 set(gca,'LineWidth',1.5)
-exportgraphics(gca,'../Analysis/ParetoFront_2.eps', 'Resolution',300);
+% exportgraphics(gca,'../Analysis/ParetoFront_2.eps', 'Resolution',300);
 % exportgraphics(gca,'../Analysis/ParetoFront.eps', 'Resolution',300);
 
 figure(4)
@@ -173,7 +176,7 @@ set(gcf, 'Position', [300, 100, 800, 700]);  % Set figure size in pixels
 set(gca,'XScale','log')
 set(gca, 'FontSize', fontsize, 'FontName', 'Times New Roman','TickLabelInterpreter','latex');
 
-exportgraphics(gca,'../Analysis/ParetoFront_enlarged_2.eps')
+% exportgraphics(gca,'../Analysis/ParetoFront_enlarged_2.eps')
 % exportgraphics(gca,'../Analysis/ParetoFront_enlarged.eps', 'Resolution',300);
 
 %%
