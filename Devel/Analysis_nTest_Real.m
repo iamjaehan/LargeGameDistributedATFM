@@ -48,13 +48,16 @@ for i = 1:7
     finalCost(1,i) = ours{2*i - 1}.postAlgCost;
     finalCost(2,i) = ours{2*i}.postAlgCost;
     finalCost(3,i) = cent{i}.postAlgCost;
+
+    convergeList = find(finalCost(1,i) == ours{2*i - 1}.costHistory);
+    adjustVal = convergeList(1)/convergeList(end);
     
-    totTime(1,i) = sum(ours{2*i - 1}.solveTime);
-    totTime(2,i) = sum(ours{2*i}.solveTime);
+    totTime(1,i) = sum(ours{2*i - 1}.solveTime) * ours{2*i - 1}.roundCount * adjustVal;
+    totTime(2,i) = sum(ours{2*i}.solveTime) * ours{2*i}.roundCount  * adjustVal;
     totTime(3,i) = sum(cent{i}.solveTime);
 
-    avgTime(1,i) = mean(ours{2*i - 1}.solveTime);
-    avgTime(2,i) = mean(ours{2*i}.solveTime);
+    avgTime(1,i) = mean(ours{2*i - 1}.solveTime) * ours{2*i - 1}.roundCount  * adjustVal;
+    avgTime(2,i) = mean(ours{2*i}.solveTime) * ours{2*i}.roundCount  * adjustVal;
     avgTime(3,i) = mean(cent{i}.solveTime);
 end
 finalCost = finalCost / 60;
