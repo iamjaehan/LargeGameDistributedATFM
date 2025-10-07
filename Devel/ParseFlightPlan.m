@@ -2,8 +2,8 @@ function flight_paths = ParseFlightPlan()
 % ParseFlightPlan reads the .so6 file and extracts flight segments.
 
     % Read the .so6 file
-    % fid = fopen('../Data/20230725_NW_SW_Axis_RegulatedFlw .so6', 'r');
-    fid = fopen('../Data_4/BREST230726.so6', 'r');
+    fid = fopen('../Data_2/20230725_NW_SW_Axis_RegulatedFlw .so6', 'r');
+    % fid = fopen('../Data_4/BREST230726.so6', 'r');
     lines = textscan(fid, '%s', 'Delimiter', '\n');
     fclose(fid);
     lines = lines{1};

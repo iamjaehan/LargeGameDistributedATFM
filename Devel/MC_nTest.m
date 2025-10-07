@@ -1,6 +1,6 @@
 clear all
 nCaseSet = [10, 30, 100,  300, 1000, 3000, 10000];
-testName = "real_nTest";
+testName = "real_nTest_95";
 iterNum = 1;
 
 origT = tic;

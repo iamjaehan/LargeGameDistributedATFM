@@ -7,7 +7,7 @@ flightn = length(controlledFlights);
 %% Environment setting
 % testName = "real_nTest";
 
-n = flightn; 
+% n = flightn; 
 % epsilon = 0;
 % algorithm = 3; %1 - Ours, 2 - Centralized, 3 - FCFS
 % capacity = 7;
@@ -76,7 +76,7 @@ for i = 1:n
 end
 initialOccupancyMatrix = occupancyMatrix;
 maxOccupancy = max(initialOccupancyMatrix(:));
-% capacity = round(maxOccupancy * 0.70);
+capacity = round(maxOccupancy * 0.90);
 initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
 
 %% Identify control center for each flight
