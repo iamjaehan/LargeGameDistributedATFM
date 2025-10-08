@@ -142,10 +142,12 @@ clf
 errorbar(nSet, meanTotTime(1,:), stdTotTime(1,:), 'Marker', oursMarker{1}, 'MarkerSize', 15, 'LineWidth', 2,'Color',colors(1,:))
 hold on
 grid on
-errorbar(nSet, meanTotTime(2,:), stdTotTime(2,:), 'Marker', oursMarker{2}, 'MarkerSize', 15, 'LineWidth', 2,'Color',colors(2,:))
-errorbar(nSet, meanTotTime(3,:), stdTotTime(3,:), 'Marker', oursMarker{3}, 'MarkerSize', 15, 'LineWidth', 2,'Color',colors(3,:))
-errorbar(nSet, meanAvgTime(1,:), stdAvgTime(1,:), 'Marker', oursMarker{1}, 'MarkerSize', 15, 'LineWidth', 2,'Color',colors(1,:),'LineStyle','--')
-errorbar(nSet, meanAvgTime(2,:), stdAvgTime(2,:), 'Marker', oursMarker{2}, 'MarkerSize', 15, 'LineWidth', 2,'Color',colors(2,:),'LineStyle','--')
+plot(nSet, totTime(2,:), 'Marker', oursMarker{2}, 'MarkerSize', 15, 'LineWidth', 2,'Color',colors(2,:))
+errorbar(nSet, meanTotTime(1,:), stdTotTime(1,:), 'Marker', oursMarker{1}, 'MarkerSize', 15, 'LineWidth', 2,'Color',colors(2,:))
+plot(nSet, totTime(3,:), 'Marker', oursMarker{3}, 'MarkerSize', 15, 'LineWidth', 2,'Color',colors(3,:))
+errorbar(nSet, meanTotTime(1,:), stdTotTime(1,:), 'Marker', oursMarker{1}, 'MarkerSize', 15, 'LineWidth', 2,'Color',colors(,:))
+plot(nSet, avgTime(1,:), 'Marker', oursMarker{1}, 'MarkerSize', 15, 'LineWidth', 2,'Color',colors(1,:),'LineStyle','--')
+plot(nSet, avgTime(2,:), 'Marker', oursMarker{2}, 'MarkerSize', 15, 'LineWidth', 2,'Color',colors(2,:),'LineStyle','--')
 
 legend(oursLegend,'Location','Northwest')
 xlabel("Number of Aircraft")
