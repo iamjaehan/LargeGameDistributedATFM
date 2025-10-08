@@ -1,11 +1,11 @@
 clear all
 nCaseSet = [10, 30, 100,  300, 1000, 3000, 10000];
 testName = "real_nTest_90_iter10";
-iterNum = 1;
+iterNum = 10;
 
 caseNum = length(nCaseSet);
 for ii = 1:caseNum
-    for j = 1:iterNum
+    for jj = 1:iterNum
         n = nCaseSet(ii);
 
         epsilon = 0;

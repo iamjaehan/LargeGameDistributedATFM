@@ -1,5 +1,6 @@
 % Load Ours
-folderPath = '../Analysis/Ours_real_nTest'; 
+% folderPath = '../Analysis/Ours_real_nTest'; 
+folderPath = '../Analysis/Ours_real_nTest_90_iter10'; 
 matFiles = dir(fullfile(folderPath, '*.mat'));
 oursLen = length(matFiles);
 ours = cell(oursLen,1);
@@ -10,7 +11,8 @@ for k = 1:oursLen
 end
 
 % Load Centralized
-folderPath = '../Analysis/Centralized_real_nTest'; 
+% folderPath = '../Analysis/Centralized_real_nTest'; 
+folderPath = '../Analysis/Centralized_real_nTest_90_iter10'; 
 matFiles = dir(fullfile(folderPath, '*.mat'));
 centLen = length(matFiles);
 cent = cell(centLen,1);
@@ -44,7 +46,7 @@ finalCost = zeros(3, caseNum);
 totTime = zeros(3, caseNum);
 avgTime = zeros(3, caseNum);
 
-for i = 1:7
+for i = 1:caseNum
     finalCost(1,i) = ours{2*i - 1}.postAlgCost;
     finalCost(2,i) = ours{2*i}.postAlgCost;
     finalCost(3,i) = cent{i}.postAlgCost;
