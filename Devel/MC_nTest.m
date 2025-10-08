@@ -1,13 +1,12 @@
 clear all
 nCaseSet = [10, 30, 100,  300, 1000, 3000, 10000];
-testName = "real_nTest_95";
+testName = "real_nTest_90_iter10";
 iterNum = 1;
 
-origT = tic;
 caseNum = length(nCaseSet);
-for i = 1:caseNum
+for ii = 1:caseNum
     for j = 1:iterNum
-        n = nCaseSet(i);
+        n = nCaseSet(ii);
 
         epsilon = 0;
         algorithm = 1; % Ours fully noncooperative
@@ -24,4 +23,3 @@ for i = 1:caseNum
         run("Main.m")
     end
 end
-toc(origT)
