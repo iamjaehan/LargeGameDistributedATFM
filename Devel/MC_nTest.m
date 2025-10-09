@@ -1,7 +1,7 @@
 clear all
 nCaseSet = [10, 30, 100,  300, 1000, 3000, 10000];
-testName = "real_nTest_90_iter10";
-iterNum = 10;
+testName = "real_nTest_85_iter5";
+iterNum = 5;
 
 caseNum = length(nCaseSet);
 for ii = 1:caseNum

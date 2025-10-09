@@ -76,7 +76,7 @@ for i = 1:n
 end
 initialOccupancyMatrix = occupancyMatrix;
 maxOccupancy = max(initialOccupancyMatrix(:));
-capacity = round(maxOccupancy * 0.90);
+capacity = round(maxOccupancy * 0.85);
 initialOverloadCost = ComputeSystemCost(m, initialOccupancyMatrix, capacity);
 
 %% Identify control center for each flight
