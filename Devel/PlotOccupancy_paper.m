@@ -22,11 +22,11 @@ xlabel('Time')
 ylabel("Number of Aircraft")
 % title("Traffic Demand Profile - κ = 1")
 
-set(gcf, 'Position', [900, 100, 800, 700]);  % Set figure size in pixels
+set(gcf, 'Position', [900, 100, 1200, 600]);  % Set figure size in pixels
 % set(gcf, 'Position', [900, 100, 1600, 500]);  % Set figure size in pixels
 set(gca,'fontsize',23)
 set(gca,'LineWidth',1.5)
 set(gca,'FontName','Times New Roman')
-ylim([0 16])
+ylim([0 30])
 
 end

@@ -5,7 +5,7 @@ flight_sector_map = load("flight_sector_map.mat"); flight_sector_map = flight_se
 FIRs = load("FIRs.mat"); FIRs = FIRs.FIRs;
 
 %% Plotting
-figure(1); clf; hold on; axis equal;
+% figure(1); clf; hold on; axis equal;
 
 % Plot World
 lonlim = [-35 45];
@@ -15,45 +15,137 @@ latlim = [15 80]; %For whole Europe
 worldmap('World');
 worldmap(latlim,lonlim);
 
-load coastlines
-% plot(coastlon, coastlat, 'LineWidth', 1)
-plotm(coastlat, coastlon, 'LineWidth', 1)
-hold on
+countries = shaperead('ne_110m_admin_0_countries/ne_110m_admin_0_countries.shp','UseGeoCoords',true);
+names_raw = {countries.NAME};                        % cell array of char
+names = cellfun(@(s) strtrim(s(s ~= 0)), names_raw, 'UniformOutput', false);
+% idx = strcmp(names, 'Spain');                        % 이제 정상 비교 가능
+
+% load coastlines
+% plotm(coastlat, coastlon, 'LineWidth', 1)
+% hold on
+% geoshow(countries(idx), ...
+%     'DisplayType','polygon','FaceColor',[1 0.85 0.85],'EdgeColor','red','LineWidth',1.5);
 
 % Plot Sectors
-indices = cell2mat(keys(sectors));
-for i = 1:length(indices)
-    sid = indices(i);                  % sector ID
-    polygons = sectors(sid);           % cell array of polygons
-    for j = 1:length(polygons)
-        coords = polygons{j}/60;          % Nx2 [lon, lat]
-        plotm(coords(:,2), coords(:,1), 'Color', [0.3, 0.3, 1.0], 'LineWidth', 1);  % black outline
-    end
-end
-xlabel('Longitude (Projected)');
-ylabel('Latitude (Projected)');
-title('Airspace Sectors');
-grid on;
+% indices = cell2mat(keys(sectors));
+% for i = 1:length(indices)
+%     sid = indices(i);                  % sector ID
+%     polygons = sectors(sid);           % cell array of polygons
+%     for j = 1:length(polygons)
+%         coords = polygons{j}/60;          % Nx2 [lon, lat]
+%         plotm(coords(:,2), coords(:,1), 'Color', [0.3, 0.3, 1.0], 'LineWidth', 1);  % black outline
+%     end
+% end
+% xlabel('Longitude (Projected)');
+% ylabel('Latitude (Projected)');
+% title('Airspace Sectors');
+% grid on;
 
 % Plot FIRs
 % for i = 1:length(FIRs)
+% % for i = 1:10
 %     for j = 1:length(FIRs(i).polygons)
 %         coords = FIRs(i).polygons{j};
-%         plotm(coords(:,2), coords(:,1), 'Color', [1, 0.3, 0.3], 'LineWidth', 1.5);  % blueish outline
+%         plotm(coords(:,2), coords(:,1), 'Color', [0, 0, 1], 'LineWidth', 1.5);  % blueish outline
 %     end
 % end
 
 % Plot Flights
-flight_ids = cell2mat(keys(flight_paths));
-for i = 1:100
-    flight_id = flight_ids(i);
-    data = flight_paths(flight_id)/60;  % N×7 matrix
-    x = data(:,4);
-    y = data(:,5);
+% flight_ids = cell2mat(keys(flight_paths));
+% for i = 1:10
+%     flight_id = flight_ids(i);
+%     data = flight_paths(flight_id)/60;  % N×7 matrix
+%     x = data(:,4);
+%     y = data(:,5);
+% 
+%     plotm(y(1), x(1), 60, 'g.','MarkerSize',15);
+%     plotm(y(end), x(end), 60, 'b.','MarkerSize',15);
+%     plotm(y, x, 'r-', 'LineWidth', 2,'LineWidth',1.2); hold on;
+% end
+% axis equal;
+% grid on;
 
-    plotm(y(1), x(1), 60, 'g.','MarkerSize',15);
-    plotm(y(end), x(end), 60, 'b.','MarkerSize',15);
-    plotm(y, x, 'r-', 'LineWidth', 2,'LineWidth',1.2); hold on;
+%% Animate
+fab_name_to_index = containers.Map( ...
+        {'Belgium', 'Denmark', 'France', 'Germany', 'Ireland', 'Netherlands', 'Norway', 'Portugal', 'Spain', 'Sweden', 'Switzerland', 'United Kingdom'}, ...
+         1:12);
+
+countryList = {'Belgium', 'Denmark', 'France', 'Germany', 'Ireland', 'Netherlands', 'Norway', 'Portugal', 'Spain', 'Sweden', 'Switzerland', 'United Kingdom'};
+
+prefix_to_country = containers.Map( ...
+        {'EB', 'ED', 'EE', 'EF', 'EG', 'EH', 'EI', 'EK', 'EL', ...
+         'EN', 'EP', 'ES', 'ET', 'EV', 'EY', 'LF', 'LG', 'LH', ...
+         'LI', 'LJ', 'LK', 'LL', 'LM', 'LN', 'LO', 'LP', 'LR', ...
+         'LS', 'LT', 'LU', 'LV', 'LE', 'GC'}, ...
+        {'Belgium', 'Germany', 'Estonia', 'Finland', 'United Kingdom', 'Netherlands', 'Ireland', ...
+         'Denmark', 'Greece', 'Norway', 'Poland', 'Sweden', 'Germany', 'Latvia', 'Lithuania', ...
+         'France', 'Greece', 'Hungary', 'Italy', 'Slovenia', 'Czech Republic', 'Israel', ...
+         'Malta', 'Albania', 'Austria', 'Portugal', 'Romania', 'Switzerland', 'Turkey', ...
+         'Moldova', 'Latvia', 'Spain', 'Spain'} ...
+    );
+
+
+fabIdx_to_mapIdx = [];
+for i = 1:length(countryList)
+    fabIdx_to_mapIdx(i) = find(strcmp(names,countryList{i}));
 end
-axis equal;
-grid on;
+
+numRounds = size(occupancyHistory,1)/m;
+maxOverload = max(max(occupancyHistory - capacity));
+
+% Initial setting max occupancy
+r = 1;
+localOccuMatrix = occupancyHistory(1 + (r-1)*m: r * m,:);
+
+% localMaxOverload = max(0,max(localOccuMatrix,[],2) - capacity);
+% for t = 1:size(localOccuMatrix,2)
+% figure(2); clf; hold on; axis equal; grid on;
+% run("Visualize_sub.m")
+% localMaxOverload = max(0,max(localOccuMatrix(:,t)) - capacity);
+% overloadSec = find(localMaxOverload>0);
+% for i = 1:length(overloadSec)
+%     localIdx = overloadSec(i);
+%     countryName = countryList{localIdx};
+%     idx = strcmp(names, countryName);
+%     intensity = localMaxOverload(localIdx)/maxOverload;
+%     geoshow(countries(idx), 'DisplayType','polygon','FaceColor',[1 0 0],'FaceAlpha',intensity^4,'EdgeColor','r','EdgeAlpha',intensity,'LineWidth',1.5);
+% end
+% end
+
+% Outcome max occupancy
+figure(3); clf; hold on; axis equal; grid on;
+run("Visualize_sub.m")
+
+r = numRounds;
+localOccuMatrix = occupancyHistory(1 + (r-1)*m: r * m,:);
+localMaxOverload = max(0,max(localOccuMatrix,[],2) - capacity);
+overloadSec = find(localMaxOverload>0);
+for i = 1:length(overloadSec)
+    localIdx = overloadSec(i);
+    countryName = countryList{localIdx};
+    idx = strcmp(names, countryName);
+    intensity = localMaxOverload(localIdx)/maxOverload;
+    geoshow(countries(idx), 'DisplayType','polygon','FaceColor',[1 0 0],'FaceAlpha',intensity,'EdgeColor','r','EdgeAlpha',intensity,'LineWidth',1.5);
+end
+
+% Occupancy plot evolution chart
+for r = 1:numRounds
+    localOccuMatrix = occupancyHistory(1 + (r-1)*m: r * m,:);
+    PlotOccupancy_paper(localOccuMatrix, simTime, sector_ids, m, capacity, 3)
+    exportgraphics(gca,"Evo_"+num2str(r)+".pdf",'Resolution',300)
+
+    figure(4); clf; hold on; axis equal; grid on;
+    run("Visualize_sub.m")
+    
+    localOccuMatrix = occupancyHistory(1 + (r-1)*m: r * m,:);
+    localMaxOverload = max(0,max(localOccuMatrix,[],2) - capacity);
+    overloadSec = find(localMaxOverload>0);
+    for i = 1:length(overloadSec)
+        localIdx = overloadSec(i);
+        countryName = countryList{localIdx};
+        idx = strcmp(names, countryName);
+        intensity = localMaxOverload(localIdx)/maxOverload;
+        geoshow(countries(idx), 'DisplayType','polygon','FaceColor',[1 0 0],'FaceAlpha',intensity,'EdgeColor','r','EdgeAlpha',intensity,'LineWidth',1.5);
+    end
+    exportgraphics(gca,"Evo_Map_"+num2str(r)+".pdf",'Resolution',300)
+end

@@ -5,8 +5,8 @@ oursLen = 40;
 ours = cell(oursLen,1);
 for k = 1:oursLen
     % fileName = fullfile(folderPath, matFiles(k+40).name);
-    fileName = fullfile(folderPath, matFiles(k+80).name);
-    % fileName = fullfile(folderPath, matFiles(k).name);
+    % fileName = fullfile(folderPath, matFiles(k+80).name);
+    fileName = fullfile(folderPath, matFiles(k).name);
     data = load(fileName);
     ours{k} = data;
 end
@@ -18,8 +18,8 @@ centLen = 10;
 cent = cell(centLen,1);
 for k = 1:centLen
     % fileName = fullfile(folderPath, matFiles(k+10).name);
-    fileName = fullfile(folderPath, matFiles(k+20).name);
-    % fileName = fullfile(folderPath, matFiles(k).name);
+    % fileName = fullfile(folderPath, matFiles(k+20).name);
+    fileName = fullfile(folderPath, matFiles(k).name);
     data = load(fileName);
     cent{k} = data;
 end
@@ -31,8 +31,8 @@ fcfsLen = 1;
 fcfs = cell(fcfsLen,1);
 for k = 1:fcfsLen
     % fileName = fullfile(folderPath, matFiles(k+1).name);
-    fileName = fullfile(folderPath, matFiles(k+2).name);
-    % fileName = fullfile(folderPath, matFiles(k).name);
+    % fileName = fullfile(folderPath, matFiles(k+2).name);
+    fileName = fullfile(folderPath, matFiles(k).name);
     data = load(fileName);
     fcfs{k} = data;
 end
@@ -63,7 +63,21 @@ for j = 1:iterNum
     avgCompTime(j,6) = fcfs{1}.solveTime;
 end
 
+overtakeTime = zeros(iterNum,3); % only for nonzero k
+for i = 2:4
+    for j = 1:iterNum
+        centSol = finalCost(j,5); oursST = ours{j + (i-1)*iterNum}.solveTime;
+        oursST = oursST(oursST ~= 0); stLen = length(oursST);
+        costHist = ours{j + (i-1)*iterNum}.costHistory;
+        temp = find(costHist<=centSol);
+        overtakeIdx = temp(1);
+        idx = mod(0:overtakeIdx,stLen) + 1;
+        overtakeTime(j,i-1) = sum(oursST(idx));
+    end
+end
+
 finalCost = finalCost/60;
+overtakeTime = overtakeTime ./ median(compTime(:,5));
 compTime = compTime ./ median(compTime(:,5));
 avgCompTime = avgCompTime ./ median(avgCompTime(:,5));
 
@@ -112,19 +126,30 @@ h = findobj(gca,'Tag','Box');
 set(h,'LineWidth',1.5)
 yl = ylim;
 ylim([yl(1), yl(2) * 1.07])   % 위로 5% 늘리기
-exportgraphics(gca,'../Analysis/FinalCostComparison_2.eps', 'Resolution',300);
+% exportgraphics(gca,'../Analysis/FinalCostComparison_2.eps', 'Resolution',300);
+% exportgraphics(gca,'../Analysis/FinalCostComparison_2.pdf', 'Resolution',300);
 % exportgraphics(gca,'../Analysis/FinalCostComparison.eps', 'Resolution',300);
+% exportgraphics(gca,'../Analysis/FinalCostComparison.pdf', 'Resolution',300);
+
+delta = 0.22;
 
 figure(2)
 clf
-boxplot(compTime)
+boxplot(compTime(:,[1,5,6]),'Positions',[1,5,6])
 hold on
-boxplot(avgCompTime(:,1:4),'Positions',1:4,'Colors','k')
+boxplot(compTime(:,2:4),'Positions',(2:4)-delta,'Widths',0.4)
+boxplot(avgCompTime(:,1:4),'Positions',1:4,'Colors','k','Widths',0.35)
 h = findobj(gca,'Tag','Box');
 h2 = findobj(gca,'Tag','Median');
 set(h, 'LineWidth', 1.5)
 set(h(1:4), 'LineStyle', '-.')
 set(h2(1:4),'Color','r')
+boxplot(overtakeTime, 'Positions',(2:4)+delta,'Colors',[0 0.6 0.7],'Widths',0.35)
+h = findobj(gca,'Tag','Box');
+h2 = findobj(gca,'Tag','Median');
+set(h, 'LineWidth', 1.5)
+set(h(1:3), 'LineStyle', '-')
+set(h2(1:3),'Color','r')
 grid on
 set(gca, 'FontSize', fontsize, 'FontName', 'Times New Roman','TickLabelInterpreter','latex');
 set(gca,'YScale','log','LineWidth',1.5)
@@ -134,8 +159,10 @@ xtickangle(0)
 title("Normalized Computation Time Comparison")
 ylabel("Normalized Computation Time [-]")
 set(gcf, 'Position', [900, 100, 800, 700]);  % Set figure size in pixels
-exportgraphics(gca,'../Analysis/TimeComparison_2.eps', 'Resolution',300);
+% exportgraphics(gca,'../Analysis/TimeComparison_2.eps', 'Resolution',300);
+% exportgraphics(gca,'../Analysis/TimeComparison_2.pdf', 'Resolution',300);
 % exportgraphics(gca,'../Analysis/TimeComparison.eps', 'Resolution',300);
+% exportgraphics(gca,'../Analysis/TimeComparison.pdf', 'Resolution',300);
 
 %%
 % % compTimeAvg = avgCompTimeAvg;

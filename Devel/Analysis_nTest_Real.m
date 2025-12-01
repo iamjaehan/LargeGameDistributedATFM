@@ -1,6 +1,7 @@
 % Load Ours
 % folderPath = '../Analysis/Ours_real_nTest'; 
-folderPath = '../Analysis/Ours_real_nTest_90_iter10'; 
+% folderPath = '../Analysis/Ours_real_nTest_90_iter10'; 
+folderPath = '../Analysis/Ours_real_nTest_85_iter5'; 
 matFiles = dir(fullfile(folderPath, '*.mat'));
 oursLen = length(matFiles);
 ours = cell(oursLen,1);
@@ -12,7 +13,7 @@ end
 
 % Load Centralized
 % folderPath = '../Analysis/Centralized_real_nTest'; 
-folderPath = '../Analysis/Centralized_real_nTest_90_iter10'; 
+folderPath = '../Analysis/Centralized_real_nTest_85_iter5'; 
 matFiles = dir(fullfile(folderPath, '*.mat'));
 centLen = length(matFiles);
 cent = cell(centLen,1);
@@ -34,7 +35,7 @@ for k = 1:fcfsLen
 end
 
 %% Preprocess
-iterNum = 10;
+iterNum = 5;
 oursLegend = {"$\kappa = 0$", "$\kappa = 1.0$", "Centralized"};
 oursMarker = {"o","^","*"};
 nSet = [10, 30, 100, 300, 1000, 3000, 10000];
@@ -48,9 +49,9 @@ avgTime = zeros(3, caseNum, iterNum);
 
 for i = 1:caseNum
     for j = 1:iterNum
-        rrIdx = 2*(10*(i - 1) + j) - 1;
-        coopIdx = 2*(10*(i - 1) + j);
-        centIdx = 10*(i - 1) + j;
+        rrIdx = 2*(iterNum*(i - 1) + j) - 1;
+        coopIdx = 2*(iterNum*(i - 1) + j);
+        centIdx = iterNum*(i - 1) + j;
 
         finalCost(1,i,j) = ours{rrIdx}.postAlgCost;
         finalCost(2,i,j) = ours{coopIdx}.postAlgCost;
@@ -77,22 +78,22 @@ meanAvgTime = mean(avgTime,3); stdAvgTime = std(avgTime,[],3);
 % set(groot, 'defaultAxesTickLabelInterpreter','latex');  
 % set(groot, 'defaultLegendInterpreter','latex');
 
-% figure(1)
-% clf
-% plot(nSet, finalCost(1,:), 'o--', 'MarkerSize', 10, 'LineWidth', 2.5)
-% hold on
-% plot(nSet, finalCost(2,:), 'o--', 'MarkerSize', 10, 'LineWidth', 2.5)
-% plot(nSet, finalCost(3,:), 'o--', 'MarkerSize', 10, 'LineWidth', 2.5)
-% grid on
-% legend(oursLegend,'Location','Northwest')
-% xlabel("Number of Aircraft")
-% ylabel("Overload Cost + 1")
-% title("Overload Cost vs Number of Aircraft")
-% set(gca, 'FontSize', 20)
-% set(gca, 'YScale', 'linear', 'XScale', 'log', 'GridAlpha', 0.3, 'MinorGridAlpha', 0.4)
-% set(gcf, 'Position', [100, 100, 800, 700]);  % Set figure size in pixels
-% saveas(gcf,'../Analysis/acNumtoOverload_tight.png')
-% exportgraphics(gca,'../Analysis/nTest_overload.eps','Resolution',300)
+figure(1)
+clf
+plot(nSet, finalCost(1,:), 'o--', 'MarkerSize', 10, 'LineWidth', 2.5)
+hold on
+plot(nSet, finalCost(2,:), 'o--', 'MarkerSize', 10, 'LineWidth', 2.5)
+plot(nSet, finalCost(3,:), 'o--', 'MarkerSize', 10, 'LineWidth', 2.5)
+grid on
+legend(oursLegend,'Location','Northwest')
+xlabel("Number of Aircraft")
+ylabel("Overload Cost + 1")
+title("Overload Cost vs Number of Aircraft")
+set(gca, 'FontSize', 20)
+set(gca, 'YScale', 'linear', 'XScale', 'log', 'GridAlpha', 0.3, 'MinorGridAlpha', 0.4)
+set(gcf, 'Position', [100, 100, 800, 700]);  % Set figure size in pixels
+saveas(gcf,'../Analysis/acNumtoOverload_tight.png')
+exportgraphics(gca,'../Analysis/nTest_overload.eps','Resolution',300)
 % 
 % figure(3)
 % clf
