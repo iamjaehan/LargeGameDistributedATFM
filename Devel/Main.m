@@ -1,7 +1,12 @@
 % clear all;
-% Load data
-controlledFlights = load("controlledFlights.mat"); controlledFlights = controlledFlights.controlledFlights;
-flight_sector_map = load("flight_sector_map.mat"); assigned_sector = flight_sector_map.flight_sector_map;
+%% Dataset selection
+% 'europe'  -> 12 country-level agents, all 29 days merged (qualitative demo)
+% 'brest'   -> 28 BREST sectors, one traffic date per file; set dataDay
+% Parse first with ParseSectorHist('brest') / ParseSectorHist('europe').
+dataset = 'brest';
+dataDay = '230726';      % '' for datasets stored as a single merged file
+
+[controlledFlights, assigned_sector] = LoadDataset(dataset, dataDay);
 flightn = length(controlledFlights);
 
 %% Environment setting
@@ -28,8 +33,12 @@ else
 end
 
 actionResolution = 2;
-% actionSet = -actionResolution:actionResolution; actionSet = actionSet * timeunit;
-actionSet = 0:actionResolution*3; actionSet = actionSet * timeunit;
+% Departure-time adjustments are encoded as integer step counts: the decision
+% variable x lives in {0, ..., maxActionStep} and is applied as x*timeunit
+% seconds.  At timeunit = 5 min this is the paper's A = {0,5,...,30} minutes.
+% The range is set here and enforced by the ga bounds below; no separate
+% action vector is passed to the cost functions.
+maxActionStep = actionResolution*3;
 timeunit = timeunit * 60;
 
 rng('shuffle');
@@ -115,11 +124,33 @@ roundCount = 0;
 
 costHistory = [];
 potentialHistory = [];
-occupancyHistory = [];
 action = zeros(n,1);
+checkCost = initialOverloadCost;
+
+% Occupancy snapshots feeding VisualizeData.m / the evolution GIFs.
+% Collected in a cell and concatenated once at the end: growing the matrix
+% with vertcat inside the loop recopies the whole accumulated array every
+% time (O(K^2) bytes moved, ~20 MB per append for BREST).  Set to false for
+% production runs that do not need the animation.
+recordHistory = true;
+occupancyHistoryCell = {};
+occupancyHistory = [];
+if recordHistory
+    % frame 0 = the initial schedule.  Also guarantees a non-empty history when
+    % no update is ever accepted (e.g. kappa = 0), which would otherwise leave
+    % occupancyHistory empty and make VisualizeData.m index out of bounds.
+    occupancyHistoryCell{end+1} = occupancyMatrix;
+end
+
+% Penalty scale used to enforce the no-new-overload restriction inside the GA.
+% sum(initialOccupancyMatrix(:)) upper-bounds any achievable overload cost, so
+% any inadmissible candidate is guaranteed to rank below every admissible one.
+bigM = 10*(1+epsilon)*sum(initialOccupancyMatrix(:)) + 1;
 
 while true
 roundCount = roundCount + 1;
+improvedThisRound = false;
+nAcceptRound = 0; nInadmRound = 0; nNoImpRound = 0;
 disp("====== BRD iteration: "+num2str(roundCount)+" ======")
 for i = 1:m % Compute the Best Response for each sector
     sectorIdx = i;
@@ -130,19 +161,31 @@ for i = 1:m % Compute the Best Response for each sector
     % lb = -actionResolution*ones(n_c,1);
     % ub = actionResolution*ones(n_c,1);
     lb = zeros(n_c,1);
-    ub = 6*ones(n_c,1);
+    ub = maxActionStep*ones(n_c,1);
     intcon = 1:n_c;
     
     prevAction = zeros(1,n_c);
     if ~isempty(optAction{i})
         prevAction = optAction{i};
     end
+
+    % O(x^(t)): sector-time pairs already overloaded before sector i deviates.
+    % Definition 4 forbids adding anything to this set.
+    prevOverloadMask = occupancyMatrix > capacity;
+
     % ga-based optimizer
     tic
     if n_c > 0
-        disp("Solving a problem involving "+num2str(n_c)+" flights")
-        fitnessFcn = @(x) ComputeCost(x,n,m,actionSet,occupancyMatrix,assigned_sector,sector_ids,sectorIdx,capacity,flightsUnderControl,epsilon,flights,earliest,prevAction,timeunit);   
-        [opt_action, ~] = ga(fitnessFcn,n_c,[],[],[],[],lb,ub,[],intcon,options);
+        disp("[r"+num2str(roundCount)+" s"+num2str(i)+"/"+num2str(m)+"] Solving a problem involving "+num2str(n_c)+" flights")
+        fitnessFcn = @(x) ComputeCost(x,n,m,occupancyMatrix,assigned_sector,sector_ids,sectorIdx,capacity,flightsUnderControl,epsilon,flights,earliest,prevAction,timeunit,prevOverloadMask,bigM);   
+        % Seed the population with the incumbent action.  The best response is
+        % an argmin over the admissible set, which always contains the current
+        % action, so a correct approximation can never be worse than the status
+        % quo.  Without this seed a stochastic GA miss looks identical to "no
+        % improving action exists" and terminates the run, falsely reporting a
+        % pure Nash equilibrium.
+        gaOptions = optimoptions(options, 'InitialPopulationMatrix', prevAction);
+        [opt_action, ~] = ga(fitnessFcn,n_c,[],[],[],[],lb,ub,[],intcon,gaOptions);
         optAction{i} = opt_action;
         % disp("FIR "+num2str(sector_id)+" action: "+num2str(opt_action));
         drawnow;
@@ -158,41 +201,95 @@ for i = 1:m % Compute the Best Response for each sector
         tempOccupancyMatrix = occupancyMatrix;
     end
 
-    % Check viability
-    checkCost = ComputeSystemCost(m, tempOccupancyMatrix, capacity);
+    % ---- Admissibility (Definition 4) + acceptance test (Algorithm 1, l.9) ----
+    % (i) the deviation may not overload any sector-time pair that was feasible
+    %     before it;  (ii) it is adopted only if it strictly improves the
+    %     deviating agent's OWN cost J_i.  Gating on the potential instead is
+    %     wrong once O(x) changes: a move that removes overload can raise Phi
+    %     and would be rejected.
+    newOverloadMask = (tempOccupancyMatrix > capacity) & ~prevOverloadMask;
+    admissible = ~any(newOverloadMask(:));
+
+    prevSysCost = ComputeSystemCost(m, occupancyMatrix, capacity);
+    candSysCost = ComputeSystemCost(m, tempOccupancyMatrix, capacity);
+    Li_prev = ComputeOverLoad(sectorIdx, occupancyMatrix, capacity);
+    Li_cand = ComputeOverLoad(sectorIdx, tempOccupancyMatrix, capacity);
+    Ji_prev = Li_prev + epsilon*(prevSysCost - Li_prev);   % J_i(x^(t))
+    Ji_cand = Li_cand + epsilon*(candSysCost - Li_cand);   % J_i(x^cand)
+
+    accepted = false;
+    if ~admissible
+        disp("[r"+num2str(roundCount)+" s"+num2str(i)+"] New overload introduced ==> INADMISSIBLE ==> Revert.")
+        optAction{i} = prevAction;
+        action(flightsUnderControl) = prevAction;
+        checkCost = prevSysCost;
+        nInadmRound = nInadmRound + 1;
+    elseif Ji_cand >= Ji_prev
+        disp("[r"+num2str(roundCount)+" s"+num2str(i)+"] No cost improvement ==> Revert.")
+        optAction{i} = prevAction;
+        action(flightsUnderControl) = prevAction;
+        checkCost = prevSysCost;
+        nNoImpRound = nNoImpRound + 1;
+    else
+        occupancyMatrix = tempOccupancyMatrix;
+        checkCost = candSysCost;
+        improvedThisRound = true;
+        accepted = true;
+        nAcceptRound = nAcceptRound + 1;
+    end
+
+    % Potential function (13), evaluated on the accepted profile (logging only).
+    % At epsilon = 1 the (1-epsilon) weight is zero, so the m ComputeSelfCost
+    % sweeps cannot change potentialCost -- skipping them is exactly equivalent
+    % and avoids an O(m^2) cost per round.
     Cii = 0;
+    if epsilon ~= 1
     for k = 1:m
         T_sector_id = sector_ids(k); T_sectorIdx = k; T_flightsUnderControl = find(controlCenter == T_sector_id);
         localAction = zeros(n, 1); 
         if ~isempty(optAction{k})
             localAction(T_flightsUnderControl) = optAction{k};
         end 
-        Cii = Cii + ComputeSelfCost(T_sectorIdx, tempOccupancyMatrix, controlCenter, sector_ids, flights, assigned_sector, localAction,earliest, timeunit);
+        Cii = Cii + ComputeSelfCost(T_sectorIdx, occupancyMatrix, capacity, controlCenter, sector_ids, flights, assigned_sector, localAction,earliest, timeunit);
+    end
     end
     potentialCost = (1-epsilon) * Cii + epsilon * checkCost;
-    disp("Potential Cost: "+num2str(potentialCost));
-    if potentialCost > prevPotentialCost
-        disp("Increased Potential Cost ==> Revert.")
-        optAction{i} = prevAction;
-        action(flightsUnderControl) = prevAction;
+    prevPotentialCost = potentialCost;
+    if accepted
+        statusStr = "ACCEPT";
     else
-        occupancyMatrix = tempOccupancyMatrix;
-        prevPotentialCost = potentialCost;
+        statusStr = "revert";
     end
+    disp("[r"+num2str(roundCount)+" s"+num2str(i)+"] "+statusStr+" | Potential: "+num2str(potentialCost)+" | System Overload: "+num2str(checkCost));
+
     costHistory = vertcat(costHistory, checkCost);
     potentialHistory = vertcat(potentialHistory, prevPotentialCost);
-    occupancyHistory = vertcat(occupancyHistory, occupancyMatrix);
+    if recordHistory && accepted
+        % a reverted iteration leaves occupancyMatrix untouched, so the old
+        % unconditional record only ever appended duplicate frames
+        occupancyHistoryCell{end+1} = occupancyMatrix; %#ok<SAGROW>
+    end
     if checkCost == 0
         break;
     end
 end
+disp("====== round "+num2str(roundCount)+" done: "+num2str(nAcceptRound)+" accepted, "+ ...
+     num2str(nInadmRound)+" inadmissible, "+num2str(nNoImpRound)+" no-improve | overload "+num2str(checkCost)+" ======")
 potentialCostOfThisRound = prevPotentialCost;
-if potentialCostOfThisRound == potentialCostOfLastRound || checkCost == 0
+% (i) a full round over all sectors yields no admissible improving update
+%     ==> pure Nash equilibrium w.r.t. the admissible action set, or
+% (ii) an overload-free profile was reached mid-round.
+if ~improvedThisRound || checkCost == 0
     disp("Termination Condition Satisfied ==> Terminating")
     break;
 end
 potentialCostOfLastRound = potentialCostOfThisRound;
 end
+
+if recordHistory && ~isempty(occupancyHistoryCell)
+    occupancyHistory = vertcat(occupancyHistoryCell{:});
+end
+clear occupancyHistoryCell;
 
 % PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
 % PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
@@ -206,15 +303,20 @@ elseif algorithm == 2
 options = optimoptions('ga','UseParallel', true,'Display','off');
 % lb = -actionResolution*ones(n,1);
 % ub = actionResolution*ones(n,1);
-lb = -actionResolution*zeros(n,1);
-ub = 6*ones(n,1);
+lb = zeros(n,1);
+ub = maxActionStep*ones(n,1);
 intcon = 1:n;
 
 disp("Solving a problem involving "+num2str(n)+" flights")
 
 tic
-fitnessFcn = @(x) ComputeCost_Centralized(x, n, m, actionSet, occupancyMatrix, assigned_sector, sector_ids, capacity, flights, earliest, timeunit, controlCenter);   
-[opt_action, postAlgCost] = ga(fitnessFcn,n,[],[],[],[],lb,ub,[],intcon,options);
+fitnessFcn = @(x) ComputeCost_Centralized(x, n, m, occupancyMatrix, assigned_sector, sector_ids, capacity, flights, earliest, timeunit, controlCenter);   
+% Warm start, matching the decentralized solver.  The centralized problem is
+% solved once from the unmodified schedule, so its incumbent is the all-zero
+% action; seeding it guarantees the solver never returns a schedule worse than
+% doing nothing, and keeps Remark 1's "identical solver assumptions" true.
+gaOptions = optimoptions(options, 'InitialPopulationMatrix', zeros(1,n));
+[opt_action, postAlgCost] = ga(fitnessFcn,n,[],[],[],[],lb,ub,[],intcon,gaOptions);
 optAction = opt_action;
 solveTime = toc;
 

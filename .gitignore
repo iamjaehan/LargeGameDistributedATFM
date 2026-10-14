@@ -1,0 +1,5 @@
+# Large raw traffic data (BREST .so6 is ~360 MB)
+Data_4/
+
+# macOS
+.DS_Store

@@ -1,4 +1,4 @@
-function cost = ComputeCost_Centralized(x, n, m, actionSet, occupancyMatrix, assigned_sector, sector_ids, capacity, flights, earliest, timeunit, controlCenter)
+function cost = ComputeCost_Centralized(x, n, m, occupancyMatrix, assigned_sector, sector_ids, capacity, flights, earliest, timeunit, controlCenter)
 
 epsilon = 0;
 cost = 0;
@@ -7,7 +7,7 @@ cost = 0;
 %     flightsUnderControl = find(controlCenter == sector_id);
 %     n_c = length(flightsUnderControl);
 %     prevAction = zeros(1,n_c);
-%     localCost = ComputeCost(x(flightsUnderControl), n, m, actionSet, occupancyMatrix, assigned_sector, sector_ids, i, capacity, flightsUnderControl, epsilon, flights, earliest, prevAction, timeunit);
+%     localCost = ComputeCost(x(flightsUnderControl), n, m, occupancyMatrix, assigned_sector, sector_ids, i, capacity, flightsUnderControl, epsilon, flights, earliest, prevAction, timeunit, false(size(occupancyMatrix)), inf);
 %     cost = cost + localCost;
 % end
 

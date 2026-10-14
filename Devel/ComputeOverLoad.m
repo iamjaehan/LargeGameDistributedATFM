@@ -1,13 +1,8 @@
 function out = ComputeOverLoad(sectorIdx, occupancyMatrix, capacity)
 
-localIdx = sectorIdx;
-occupancyVector = occupancyMatrix(localIdx, :);
-
-out = 0;
-for i = 1:length(occupancyVector)
-    if occupancyVector(i) > capacity
-        out = out + (occupancyVector(i) - capacity);
-    end
-end
+% Cumulative overload of one sector: sum_tau max(0, occupancy - D) * dtau.
+% Vectorized; occupancies are integer-valued so this is bit-identical to the
+% previous element-wise accumulation loop.
+out = sum(max(0, occupancyMatrix(sectorIdx, :) - capacity));
 
 end

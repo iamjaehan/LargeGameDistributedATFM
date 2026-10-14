@@ -1,8 +1,6 @@
 function cost = ComputeSystemCost(m, occupancyMatrix, capacity)
 
-cost = 0;
-for i = 1:m
-    cost = cost + ComputeOverLoad(i, occupancyMatrix, capacity);
-end
+% sum_i L_i(x), in a single pass over the occupancy matrix.
+cost = sum(max(0, occupancyMatrix(1:m, :) - capacity), 'all');
 
 end

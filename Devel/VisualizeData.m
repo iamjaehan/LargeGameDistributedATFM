@@ -90,6 +90,10 @@ for i = 1:length(countryList)
     fabIdx_to_mapIdx(i) = find(strcmp(names,countryList{i}));
 end
 
+if isempty(occupancyHistory)
+    error(['occupancyHistory is empty - re-run Main.m with recordHistory = true ' ...
+           '(and note that it only records rounds where an update was accepted).']);
+end
 numRounds = size(occupancyHistory,1)/m;
 maxOverload = max(max(occupancyHistory - capacity));
 
