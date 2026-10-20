@@ -18,8 +18,8 @@ for ii = 1:caseNum
         disp("Ours with "+num2str(n)+" players.")
         run("Main.m")
     
-        algorithm = 2; % Centralized solution
-        disp("Centralized with "+num2str(n)+" players.")
-        run("Main.m")
+        % GA centralized (algorithm 2) was removed; the MILP benchmark
+        % (algorithm 5) is BREST-only for now, so this test has no centralized
+        % baseline until it is extended to the European dataset.
     end
 end

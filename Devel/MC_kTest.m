@@ -11,8 +11,8 @@ for i = 1:iterNum
 end
 
 for i = 1:iterNum
-    epsilon = 1e-6;
-    algorithm = 1; % Ours fully noncooperative
+    epsilon = 1e-8;
+    algorithm = 1; % Ours, self-prioritizing (Theorem 1 bound)
     disp("*** Ours with "+num2str(epsilon)+" k value. Iteration: "+num2str(i)+" ***")
     run("Main.m")
 end
@@ -31,9 +31,15 @@ for i = 1:iterNum
     run("Main.m")
 end
 
-for i = 1:iterNum
-    algorithm = 2; % Centralized solution
-    disp("*** Centralized. Iteration: "+num2str(i)+" ***")
+for i = 1
+    algorithm = 5; % Centralized MILP (deterministic, one run)
+    disp("*** Centralized MILP. Iteration: "+num2str(i)+" ***")
+    run("Main.m")
+end
+
+for i = 1
+    algorithm = 4; % Strategic FCFS
+    disp("*** Strategic FCFS. Iteration: "+num2str(i)+" ***")
     run("Main.m")
 end
 

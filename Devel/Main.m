@@ -14,14 +14,16 @@ flightn = length(controlledFlights);
 
 n = flightn; 
 epsilon = 1;
-algorithm = 1; %1 - Ours, 2 - Centralized, 3 - FCFS
+algorithm = 1; %1 - Ours, 3 - FCFS (reactive), 4 - Strategic FCFS, 5 - Centralized MILP (BREST only); 2 (GA centralized) removed
+milpMaxTime = 3600;      % s, intlinprog time limit for algorithm 5
+brMaxTime = 600;         % s, intlinprog time limit for each best response (algorithm 1)
 % capacity = 7;
 
 timeunit = 5; %minutes
 rng(10);  % fix seed
 
-timeStart = hours(7);
-timeEnd   = hours(10);
+fcfsLookahead = 30;      % min, how far ahead the reactive FCFS (algorithm 3) detects overload
+fcfsScanStep  = 5;       % min, how often it scans
 
 if n < flightn
     % idd = sort(randperm(round(flightn/10),n));
@@ -36,8 +38,7 @@ actionResolution = 2;
 % Departure-time adjustments are encoded as integer step counts: the decision
 % variable x lives in {0, ..., maxActionStep} and is applied as x*timeunit
 % seconds.  At timeunit = 5 min this is the paper's A = {0,5,...,30} minutes.
-% The range is set here and enforced by the ga bounds below; no separate
-% action vector is passed to the cost functions.
+% The range is set here and passed to every solver as maxActionStep.
 maxActionStep = actionResolution*3;
 timeunit = timeunit * 60;
 
@@ -114,7 +115,6 @@ end
 
 %% Search Equilibrium (Ours)
 if algorithm == 1
-options = optimoptions('ga','Display','off','UseParallel', true, 'UseVectorized', false);
 optAction = cell(m,1);
 solveTime = zeros(m,1);
 potentialCost = inf;
@@ -142,10 +142,7 @@ if recordHistory
     occupancyHistoryCell{end+1} = occupancyMatrix;
 end
 
-% Penalty scale used to enforce the no-new-overload restriction inside the GA.
-% sum(initialOccupancyMatrix(:)) upper-bounds any achievable overload cost, so
-% any inadmissible candidate is guaranteed to rank below every admissible one.
-bigM = 10*(1+epsilon)*sum(initialOccupancyMatrix(:)) + 1;
+nInexactBR = 0;   % best responses not proven optimal (time limit / no solution)
 
 while true
 roundCount = roundCount + 1;
@@ -158,12 +155,6 @@ for i = 1:m % Compute the Best Response for each sector
     flightsUnderControl = find(controlCenter == sector_id);
     n_c = length(flightsUnderControl);
 
-    % lb = -actionResolution*ones(n_c,1);
-    % ub = actionResolution*ones(n_c,1);
-    lb = zeros(n_c,1);
-    ub = maxActionStep*ones(n_c,1);
-    intcon = 1:n_c;
-    
     prevAction = zeros(1,n_c);
     if ~isempty(optAction{i})
         prevAction = optAction{i};
@@ -173,22 +164,17 @@ for i = 1:m % Compute the Best Response for each sector
     % Definition 4 forbids adding anything to this set.
     prevOverloadMask = occupancyMatrix > capacity;
 
-    % ga-based optimizer
+    % Exact best response (problem (16)) as a MILP; Definition 4 is a hard
+    % constraint inside it, and the current action is the warm start.
     tic
     if n_c > 0
         disp("[r"+num2str(roundCount)+" s"+num2str(i)+"/"+num2str(m)+"] Solving a problem involving "+num2str(n_c)+" flights")
-        fitnessFcn = @(x) ComputeCost(x,n,m,occupancyMatrix,assigned_sector,sector_ids,sectorIdx,capacity,flightsUnderControl,epsilon,flights,earliest,prevAction,timeunit,prevOverloadMask,bigM);   
-        % Seed the population with the incumbent action.  The best response is
-        % an argmin over the admissible set, which always contains the current
-        % action, so a correct approximation can never be worse than the status
-        % quo.  Without this seed a stochastic GA miss looks identical to "no
-        % improving action exists" and terminates the run, falsely reporting a
-        % pure Nash equilibrium.
-        gaOptions = optimoptions(options, 'InitialPopulationMatrix', prevAction);
-        [opt_action, ~] = ga(fitnessFcn,n_c,[],[],[],[],lb,ub,[],intcon,gaOptions);
+        [opt_action, brInfo] = SolveBestResponseMILP(occupancyMatrix, assigned_sector, sector_ids, flights, earliest, timeunit, capacity, maxActionStep, flightsUnderControl, prevAction, sectorIdx, epsilon, brMaxTime);
         optAction{i} = opt_action;
-        % disp("FIR "+num2str(sector_id)+" action: "+num2str(opt_action));
-        drawnow;
+        if ~brInfo.exact
+            nInexactBR = nInexactBR + 1;
+            disp("[r"+num2str(roundCount)+" s"+num2str(i)+"] best response NOT proven optimal (exitflag "+num2str(brInfo.exitflag)+", gap "+num2str(brInfo.absoluteGap)+")")
+        end
     else
         continue;
     end
@@ -202,6 +188,7 @@ for i = 1:m % Compute the Best Response for each sector
     end
 
     % ---- Admissibility (Definition 4) + acceptance test (Algorithm 1, l.9) ----
+    % The MILP already enforces (i); the check stays as a guard.
     % (i) the deviation may not overload any sector-time pair that was feasible
     %     before it;  (ii) it is adopted only if it strictly improves the
     %     deviating agent's OWN cost J_i.  Gating on the potential instead is
@@ -295,119 +282,34 @@ clear occupancyHistoryCell;
 % PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
 
 postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity);
-disp("Initial: "+num2str(initialOverloadCost)+" / Post: "+num2str(postAlgCost)+" / Potential: "+num2str(potentialCostOfThisRound));
+disp("Initial: "+num2str(initialOverloadCost)+" / Post: "+num2str(postAlgCost)+" / Potential: "+num2str(potentialCostOfThisRound)+" / inexact best responses: "+num2str(nInexactBR));
 disp("==========")
 
-%% Centralized Algorithm
+%% Centralized GA -- removed; use algorithm 5 (Centralized MILP)
 elseif algorithm == 2
-options = optimoptions('ga','UseParallel', true,'Display','off');
-% lb = -actionResolution*ones(n,1);
-% ub = actionResolution*ones(n,1);
-lb = zeros(n,1);
-ub = maxActionStep*ones(n,1);
-intcon = 1:n;
-
-disp("Solving a problem involving "+num2str(n)+" flights")
-
-tic
-fitnessFcn = @(x) ComputeCost_Centralized(x, n, m, occupancyMatrix, assigned_sector, sector_ids, capacity, flights, earliest, timeunit, controlCenter);   
-% Warm start, matching the decentralized solver.  The centralized problem is
-% solved once from the unmodified schedule, so its incumbent is the all-zero
-% action; seeding it guarantees the solver never returns a schedule worse than
-% doing nothing, and keeps Remark 1's "identical solver assumptions" true.
-gaOptions = optimoptions(options, 'InitialPopulationMatrix', zeros(1,n));
-[opt_action, postAlgCost] = ga(fitnessFcn,n,[],[],[],[],lb,ub,[],intcon,gaOptions);
-optAction = opt_action;
-solveTime = toc;
-
-occupancyMatrix = UpdateOccupancyMatrix_Centralized(n, occupancyMatrix, assigned_sector, sector_ids, optAction, flights, earliest, timeunit);
-
-% PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
-% PlotOccupancy(occupancyMatrix - initialOccupancyMatrix, simTime, sector_ids, m, capacity, 4);
-
-postAlgCost = ComputeSystemCost(m, occupancyMatrix, capacity);
-disp("Initial: "+num2str(initialOverloadCost)+" / Post: "+num2str(postAlgCost));
-disp("==========")
-%% FCFS
+error('Main:removed', 'Algorithm 2 (GA centralized) was removed. Use algorithm 5 (Centralized MILP).');
+%% FCFS (reactive / tactical)
 elseif algorithm == 3
 tic
-% 초기 설정
-flightDelays = zeros(n,1);  % action vector
-maxDelayStep = 4;
-delayOptions = 0:maxDelayStep;  % FCFS는 정방향만 보자
-occupancyMatrix = initialOccupancyMatrix;
-
-% 시간 설정
-startIdx = round(seconds(timeStart - seconds(earliest))) + 1;
-endIdx   = round(seconds(timeEnd   - seconds(earliest))) + 1;
-startIdx = max(1, startIdx);
-endIdx   = min(timen, endIdx);
-stepSize = 300; % 5분
-simStepIndices = startIdx:stepSize:endIdx;
-
-% 전체 시간, 섹터 순회
-stepLen = length(simStepIndices);
-count = 0;
-for t = simStepIndices
-    count = count + 1;
-    disp("CurStep: " + num2str(count) + " out of " + num2str(stepLen));
-    for s = 1:m
-        if occupancyMatrix(s,t) > capacity
-            % 1. 미래에 해당 sector로 진입할 예정인 flight 찾기
-            futureFlights = [];
-            futureTimes = [];
-            for i = 1:n
-                fn = flights(i);
-                sectorMap = assigned_sector(fn);
-                for j = 1:size(sectorMap,1)
-                    sectorID = sectorMap(j,1);
-                    entryTime = round(sectorMap(j,2) - earliest + 1 + flightDelays(i)*timeunit);
-                    if sectorID == sector_ids(s) && entryTime > t
-                        futureFlights(end+1) = i;
-                        futureTimes(end+1) = entryTime;
-                        break;
-                    end
-                end
-            end
-
-            % 2. entryTime 순으로 정렬 (FCFS)
-            [~, order] = sort(futureTimes);
-            orderedFlights = futureFlights(order);
-
-            % 3. 순서대로 delay 시도
-            for idx = 1:length(orderedFlights)
-                i = orderedFlights(idx);
-                delayApplied = false;
-                for d = delayOptions
-                    newDelay = flightDelays(i) + d;
-                    if newDelay > maxDelayStep
-                        continue;
-                    end
-                    testDelays = flightDelays;
-                    testDelays(i) = newDelay;
-                    tempOccu = UpdateOccupancyMatrix_Centralized(n, initialOccupancyMatrix, assigned_sector, sector_ids, testDelays, flights, earliest, timeunit);
-                    if tempOccu(s,t) <= capacity
-                        flightDelays(i) = newDelay;
-                        occupancyMatrix = tempOccu;
-                        delayApplied = true;
-                        break;
-                    end
-                end
-                % delay로도 해결 안되면 최대 delay 적용
-                if ~delayApplied
-                    flightDelays(i) = maxDelayStep;
-                    testDelays = flightDelays;
-                    tempOccu = UpdateOccupancyMatrix_Centralized(n, initialOccupancyMatrix, assigned_sector, sector_ids, testDelays, flights, earliest, timeunit);
-                    occupancyMatrix = tempOccu;
-                end
-                if occupancyMatrix(s,t) <= capacity
-                    break;
-                end
-            end
-        end
-    end
-end
+[flightDelays, occupancyMatrix] = SolveReactiveFCFS(initialOccupancyMatrix, assigned_sector, sector_ids, flights, earliest, timeunit, capacity, maxActionStep, fcfsLookahead*60, fcfsScanStep*60);
 solveTime = toc;
+disp("Reactive FCFS: "+num2str(nnz(flightDelays))+" flights delayed")
+%% Strategic FCFS (whole-day flight plans known in advance)
+elseif algorithm == 4
+tic
+[flightDelays, occupancyMatrix, fcfsPasses] = SolveStrategicFCFS(initialOccupancyMatrix, assigned_sector, sector_ids, flights, earliest, timeunit, capacity, maxActionStep);
+solveTime = toc;
+disp("Strategic FCFS: "+num2str(nnz(flightDelays))+" flights delayed in "+num2str(fcfsPasses)+" passes")
+%% Centralized MILP (exact, intlinprog) -- BREST only for now
+elseif algorithm == 5
+if ~strcmp(dataset, 'brest')
+    error('Main:milpDataset', 'The MILP benchmark (algorithm 5) is set up for the BREST dataset only.');
+end
+[optAction, occupancyMatrix, milpInfo] = SolveMILP(initialOccupancyMatrix, assigned_sector, sector_ids, flights, earliest, timeunit, capacity, maxActionStep, milpMaxTime);
+solveTime = milpInfo.buildTime + milpInfo.solveTime;
+disp("MILP: overload "+num2str(milpInfo.overload)+" (lower bound "+num2str(milpInfo.overloadLowerBound)+ ...
+     ", exitflag "+num2str(milpInfo.exitflag)+", "+num2str(milpInfo.solveTime,'%.1f')+" s) | "+ ...
+     num2str(milpInfo.nDelayed)+" flights delayed, "+num2str(milpInfo.totalDelaySteps)+" delay steps")
 end
 
 % PlotOccupancy(occupancyMatrix, simTime, sector_ids, m, capacity, 3);
@@ -500,4 +402,18 @@ disp("==========")
 %         mkdir(folder);
 %     end
 %     save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% elseif algorithm == 4
+%     filename = "../Analysis/StrategicFCFS_"+testName+"/TestData_"+timestamp;
+%     folder = fileparts(filename);
+%     if ~isempty(folder) && ~exist(folder, 'dir')
+%         mkdir(folder);
+%     end
+%     save(filename,'m',"postAlgCost",'flightDelays', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity")
+% elseif algorithm == 5
+%     filename = "../Analysis/MILP_"+testName+"/TestData_"+timestamp;
+%     folder = fileparts(filename);
+%     if ~isempty(folder) && ~exist(folder, 'dir')
+%         mkdir(folder);
+%     end
+%     save(filename,'m',"postAlgCost",'optAction', 'occupancyMatrix',"solveTime","simTime","sector_ids","capacity","milpInfo")
 % end
