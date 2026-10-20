@@ -300,9 +300,11 @@ disp("Reactive FCFS: "+num2str(nnz(flightDelays))+" flights delayed")
 %% Strategic FCFS (whole-day flight plans known in advance)
 elseif algorithm == 4
 tic
-[flightDelays, occupancyMatrix, fcfsPasses] = SolveStrategicFCFS(initialOccupancyMatrix, assigned_sector, sector_ids, flights, earliest, timeunit, capacity, maxActionStep);
+[flightDelays, occupancyMatrix, fcfsInfo] = SolveStrategicFCFS(initialOccupancyMatrix, assigned_sector, sector_ids, flights, earliest, timeunit, capacity, maxActionStep);
 solveTime = toc;
-disp("Strategic FCFS: "+num2str(nnz(flightDelays))+" flights delayed in "+num2str(fcfsPasses)+" passes")
+disp("Strategic FCFS: "+num2str(fcfsInfo.nDelayed)+" flights delayed, "+ ...
+     num2str(fcfsInfo.nForced)+" could not be placed within the action set (added overload "+ ...
+     num2str(fcfsInfo.forcedOverload)+")")
 %% Centralized MILP (exact, intlinprog) -- BREST only for now
 elseif algorithm == 5
 if ~strcmp(dataset, 'brest')

@@ -1,4 +1,4 @@
-function [flightDelays, occupancyMatrix] = SolveReactiveFCFS(initialOccupancyMatrix, assigned_sector, sector_ids, flights, earliest, timeunit, capacity, maxActionStep, lookahead, scanStep)
+function [flightDelays, occupancyMatrix] = SolveReactiveFCFS(initialOccupancyMatrix, assigned_sector, sector_ids, flights, earliest, timeunit, capacity, maxActionStep, lookahead, scanStep, cellStep)
 % Reactive (tactical) first-come-first-served baseline (algorithm 3, paper
 % Section 6.2): "When an overload is detected, the imminent flight scheduled
 % to enter the congested sector is delayed using the same discrete action set
@@ -16,6 +16,8 @@ function [flightDelays, occupancyMatrix] = SolveReactiveFCFS(initialOccupancyMat
 % The previous version looked only at occupancy AT the scan time and delayed
 % flights entering AFTER it, which cannot change that occupancy; every
 % candidate therefore ended at the maximum delay.
+
+if nargin < 11 || isempty(cellStep), cellStep = scanStep; end
 
 n = length(flights);
 timen = size(initialOccupancyMatrix, 2);
@@ -35,10 +37,16 @@ for i = 1:n
 end
 departure = accumarray(segFlight, segStart, [n 1], @min);   % first entry = departure
 
+% The controller acts on the same scanStep grid it scans on: a human does not
+% react second by second, so overload is detected and resolved at 5-minute
+% cells rather than at every 1-second bin.  On BREST D=7 this cuts the cells
+% examined from ~21k to ~75 per day and leaves ~3% of the overload (runs
+% shorter than one scan step) unseen.
 for t = 1:scanStep:timen
-    win = t : min(timen, t + lookahead - 1);
-    [ss, tt] = find(occupancyMatrix(:, win) > capacity);
-    tt = tt + t - 1;
+    cells = t : cellStep : min(timen, t + lookahead - 1);
+    [ss, kk] = find(occupancyMatrix(:, cells) > capacity);
+    tt = reshape(cells(kk), [], 1);
+    ss = reshape(ss, [], 1);
     [tt, order] = sort(tt);
     ss = ss(order);
 
@@ -64,8 +72,13 @@ for t = 1:scanStep:timen
                     stillIn = any(segStart(own) + newDelay*timeunit <= tau & ...
                                   segEnd(own)   + newDelay*timeunit >= tau);
                     if ~stillIn
+                        % incremental: subtract this flight at its old delay and
+                        % add it back at the new one.  Rebuilding the whole
+                        % matrix from all n flights here made every delay trial
+                        % O(n) and dominated the runtime.
+                        prevDelays = flightDelays;
                         flightDelays(i) = newDelay;
-                        occupancyMatrix = UpdateOccupancyMatrix_Centralized(n, initialOccupancyMatrix, assigned_sector, sector_ids, flightDelays, flights, earliest, timeunit);
+                        occupancyMatrix = UpdateOccupancyMatrix(occupancyMatrix, assigned_sector, sector_ids, flightDelays, i, flights, earliest, timeunit, prevDelays);
                         moved = true;
                         break;
                     end

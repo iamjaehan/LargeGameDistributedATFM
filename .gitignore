@@ -6,3 +6,11 @@ Data_4/
 
 # Generated visualisation outputs (regenerate with Devel/VisualizeBrestCompare.m)
 Analysis/BrestMap/
+
+# Generated figures (regenerate with Devel/PlotBrestDays.m / PlotBrestSweep.m)
+Devel/*.png
+Devel/*.pdf
+Devel/*.gif
+
+# Scratch experiment drivers (generated from Main.m)
+Devel/*_tmp.m
