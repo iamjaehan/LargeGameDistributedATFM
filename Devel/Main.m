@@ -135,11 +135,13 @@ checkCost = initialOverloadCost;
 recordHistory = true;
 occupancyHistoryCell = {};
 occupancyHistory = [];
+occupancyHistoryMeta = zeros(0,2);   % per frame: [round, deviating sector index]; [0 0] = initial
 if recordHistory
     % frame 0 = the initial schedule.  Also guarantees a non-empty history when
     % no update is ever accepted (e.g. kappa = 0), which would otherwise leave
     % occupancyHistory empty and make VisualizeData.m index out of bounds.
     occupancyHistoryCell{end+1} = occupancyMatrix;
+    occupancyHistoryMeta(end+1,:) = [0 0];
 end
 
 nInexactBR = 0;   % best responses not proven optimal (time limit / no solution)
@@ -255,6 +257,7 @@ for i = 1:m % Compute the Best Response for each sector
         % a reverted iteration leaves occupancyMatrix untouched, so the old
         % unconditional record only ever appended duplicate frames
         occupancyHistoryCell{end+1} = occupancyMatrix; %#ok<SAGROW>
+        occupancyHistoryMeta(end+1,:) = [roundCount, sectorIdx]; %#ok<SAGROW>
     end
     if checkCost == 0
         break;
