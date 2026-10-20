@@ -3,3 +3,6 @@ Data_4/
 
 # macOS
 .DS_Store
+
+# Generated visualisation outputs (regenerate with Devel/VisualizeBrestCompare.m)
+Analysis/BrestMap/
