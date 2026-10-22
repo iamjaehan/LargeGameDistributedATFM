@@ -11,6 +11,9 @@ Analysis/BrestMap/
 Devel/*.png
 Devel/*.pdf
 Devel/*.gif
+# ...except the 28-day study figure, kept so it opens anywhere without MATLAB
+!Devel/BrestDays_D7.png
+!Devel/BrestDays_D7.pdf
 
 # Scratch experiment drivers
 Devel/*_tmp.m

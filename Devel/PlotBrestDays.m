@@ -9,8 +9,8 @@ function PlotBrestDays(matFile)
 %                      reader sees the distribution AND every observation.
 %                      The initial overload is its own box, because it now
 %                      varies by day and a single reference line would lie.
-% (b) computation time: box only (no dots), with the mean marked alongside
-%                      the median.
+% (b) computation time: box + the individual days as jittered dots, with the
+%                      mean marked alongside the median.
 %
 % Two panels rather than one with two y-axes: different measures, different
 % scales.  Colour encodes the ordered kappa family as one sequential ramp and
@@ -31,6 +31,9 @@ rampLo = [0.70 0.81 0.93]; rampHi = [0.09 0.28 0.56];
 t = linspace(0, 1, nK)';
 cK = rampLo + t.*(rampHi - rampLo);
 cBase = repmat([0.62 0.62 0.60], nM-nK, 1);
+% the centralized MILP is the optimum reference, not another heuristic:
+% darker neutral so it reads apart from the FCFS boxes
+cBase(contains(S.labels(nK+1:end), 'MILP'), :) = repmat([0.30 0.30 0.28], nnz(contains(S.labels(nK+1:end), 'MILP')), 1);
 cInit = [0.84 0.47 0.44];
 
 inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36];
@@ -94,6 +97,11 @@ for k = 1:nM
         'BoxFaceColor', colorsB(k,:), 'BoxFaceAlpha', 0.55, ...
         'WhiskerLineColor', colorsB(k,:)*0.7, 'LineWidth', 1.0, ...
         'MarkerStyle', 'none', 'BoxWidth', 0.56);
+    % every day as a dot, as in (a), so days beyond the whiskers stay visible
+    jit = (rand(numel(v),1) - 0.5) * 0.26;
+    scatter(ax2, k + jit, v, 16, 'filled', ...
+        'MarkerFaceColor', colorsB(k,:)*0.55, 'MarkerFaceAlpha', 0.55, ...
+        'MarkerEdgeColor', 'w', 'LineWidth', 0.3);
 end
 
 % mean alongside the median (boxchart draws the median line itself)
@@ -111,7 +119,10 @@ end
 StyleAxis(ax2, S.labels, gridInk, inkPrimary, inkSecondary);
 ylabel(ax2, 'Computation time [s]', 'FontSize', 11, 'Color', inkPrimary);
 PanelTitle(ax2, '(b)  Computation time', inkPrimary);
-legend(ax2, hMean, 'mean', 'Location','northwest', 'Box','off', ...
+hDayB = scatter(ax2, nan, nan, 16, 'filled', ...
+    'MarkerFaceColor', [0.45 0.45 0.45], 'MarkerFaceAlpha', 0.55, ...
+    'MarkerEdgeColor','w', 'LineWidth', 0.3);
+legend(ax2, [hDayB hMean], {'one day', 'mean'}, 'Location','northwest', 'Box','off', ...
        'FontSize', 9, 'TextColor', inkSecondary);
 
 exportgraphics(fig, [outStem '.pdf'], 'ContentType','vector');

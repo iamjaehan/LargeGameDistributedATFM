@@ -19,7 +19,7 @@
 % overload numbers are deterministic and come out identical either way.
 
 EXP_CAP     = 7;                             % sector capacity D
-EXP_KAPPAS  = [0, 1e-6, 0.5, 1];             % the paper's kappa set
+EXP_KAPPAS  = [0, 1e-8, 0.5, 1];             % the paper's kappa set
 EXP_ALGS    = [3 4 5];                       % 3/4 = FCFS reactive/strategic, 5 = centralized MILP
 EXP_MILPTIME = 300;                          % s, intlinprog limit per day for algorithm 5
 EXP_OUT     = 'exp_brest_days_D7.mat';
@@ -82,7 +82,9 @@ for EXP_DI = 1:EXP_ND
                 EXP_ROUNDS(EXP_DI, EXP_MI) = roundCount;
                 EXP_INEX(EXP_DI, EXP_MI)   = nInexactBR;
             else
-                EXP_DEL(EXP_DI, EXP_MI) = nnz(flightDelays);
+                if EXP_ALG ~= 5        % the MILP branch returns optAction, not flightDelays
+                    EXP_DEL(EXP_DI, EXP_MI) = nnz(flightDelays);
+                end
                 if EXP_ALG == 4
                     EXP_FORCED(EXP_DI, EXP_MI) = fcfsInfo.nForced;
                 elseif EXP_ALG == 5
