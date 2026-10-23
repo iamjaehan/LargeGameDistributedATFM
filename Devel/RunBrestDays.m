@@ -19,9 +19,9 @@
 % overload numbers are deterministic and come out identical either way.
 
 EXP_CAP     = 7;                             % sector capacity D
-EXP_KAPPAS  = [0, 1e-8, 0.5, 1];             % the paper's kappa set
+EXP_KAPPAS  = [0, 1e-6, 0.5, 1];             % the paper's kappa set (1e-6 meets the refined Theorem 1 bound, docs/theorem1_refined_kappa_bound.md)
 EXP_ALGS    = [3 4 5];                       % 3/4 = FCFS reactive/strategic, 5 = centralized MILP
-EXP_MILPTIME = 300;                          % s, intlinprog limit per day for algorithm 5
+EXP_MILPTIME = Inf;                          % no time limit: the MILP column is solved to proven optimality
 EXP_OUT     = 'exp_brest_days_D7.mat';
 EXP_MINFL   = 100;                           % skip truncated days (230712 has 37)
 

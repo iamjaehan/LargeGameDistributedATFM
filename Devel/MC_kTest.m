@@ -11,7 +11,7 @@ for i = 1:iterNum
 end
 
 for i = 1:iterNum
-    epsilon = 1e-8;
+    epsilon = 1e-6;
     algorithm = 1; % Ours, self-prioritizing (Theorem 1 bound)
     disp("*** Ours with "+num2str(epsilon)+" k value. Iteration: "+num2str(i)+" ***")
     run("Main.m")

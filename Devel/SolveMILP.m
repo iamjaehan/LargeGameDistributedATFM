@@ -12,10 +12,12 @@ function [flightDelays, occupancyMatrix, info] = SolveMILP(initialOccupancyMatri
 %   stage 2:  min  sum_{f,a} a y_fa   (total delay steps)
 %             s.t. the stage-1 constraints and  sum_k w_k l_k <= L*
 %
-% Stage 1 is problem (17).  Stage 2 (on by default, minimizeDelay) only picks,
-% among the schedules with the stage-1 overload L*, the one with the least
-% delay; it never changes the overload.  Without it the solver returns an
-% arbitrary optimal schedule, which can delay half the flights for nothing.
+% Stage 1 is problem (17) and is all that runs by default: like every other
+% method in the study, the centralized benchmark decides on overload alone.
+% Stage 2 (opt-in, minimizeDelay = true) only picks, among the schedules with
+% the stage-1 overload L*, the one with the least delay; it never changes the
+% overload.  Without it the delays of the returned schedule are arbitrary
+% among the optimal ones, so do not compare them.
 %
 % Rows are built on the simulator's own grid, so the optimum is directly
 % comparable with ComputeSystemCost.  Every shift is a multiple of timeunit,
@@ -25,14 +27,14 @@ function [flightDelays, occupancyMatrix, info] = SolveMILP(initialOccupancyMatri
 % those bins exactly.  Rows whose occupancy cannot exceed D under any action
 % choice are dropped.
 %
-% maxTime applies to each stage separately.
+% maxTime applies to each stage separately (only stage 1 by default).
 %
 % info: overload (simulator recomputed), overloadLowerBound and exitflag /
 %       gaps / nodes / time of stage 1, totalDelaySteps and stage-2 status,
 %       nRows, nVars, buildTime, solveTime (both stages).
 
 if nargin < 9 || isempty(maxTime), maxTime = 3600; end
-if nargin < 10 || isempty(minimizeDelay), minimizeDelay = true; end
+if nargin < 10 || isempty(minimizeDelay), minimizeDelay = false; end
 
 tBuild = tic;
 m = size(initialOccupancyMatrix, 1);
