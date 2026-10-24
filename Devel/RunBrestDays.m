@@ -51,6 +51,9 @@ EXP_INEX = nan(EXP_ND, EXP_NM);  EXP_FORCED = nan(EXP_ND, EXP_NM);
 EXP_MILPLB = nan(EXP_ND, 1);     EXP_MILPEXIT = nan(EXP_ND, 1);
 EXP_INIT = nan(EXP_ND, 1);       EXP_NF     = nan(EXP_ND, 1);
 EXP_NS   = nan(EXP_ND, 1);
+% per-flight delay (action steps) of every method, and the sector controlling
+% each flight, so delay and fairness metrics can be computed afterwards
+EXP_DELAYVEC = cell(EXP_ND, EXP_NM);  EXP_CTRL = cell(EXP_ND, 1);
 
 % run('ExpBody.m') shares this workspace and Main.m uses short variable
 % names, so everything that must survive a run is listed here and restored
@@ -58,6 +61,7 @@ EXP_NS   = nan(EXP_ND, 1);
 EXP_KEEP = {'EXP_CAP','EXP_KAPPAS','EXP_ALGS','EXP_OUT','EXP_MINFL','EXP_LABELS', ...
             'EXP_NM','EXP_DAYS','EXP_ND','EXP_OVL','EXP_TIME','EXP_DEL','EXP_ROUNDS', ...
             'EXP_INEX','EXP_FORCED','EXP_MILPLB','EXP_MILPEXIT','EXP_INIT','EXP_NF','EXP_NS','EXP_KEEP', ...
+            'EXP_DELAYVEC','EXP_CTRL', ...
             'EXP_MILPTIME', ...
             'EXP_DI','EXP_MI','EXP_DAY','EXP_EPS','EXP_ALG','EXP_T0'};
 EXP_T0 = tic;
@@ -77,6 +81,14 @@ for EXP_DI = 1:EXP_ND
             EXP_INIT(EXP_DI) = initialOverloadCost;
             EXP_NF(EXP_DI)   = n;
             EXP_NS(EXP_DI)   = m;
+            EXP_CTRL{EXP_DI} = double(controlCenter(:));
+            if EXP_ALG == 1
+                EXP_DELAYVEC{EXP_DI, EXP_MI} = double(action(:));
+            elseif EXP_ALG == 5
+                EXP_DELAYVEC{EXP_DI, EXP_MI} = double(optAction(:));
+            else
+                EXP_DELAYVEC{EXP_DI, EXP_MI} = double(flightDelays(:));
+            end
             if EXP_ALG == 1
                 EXP_DEL(EXP_DI, EXP_MI)    = nnz(action);
                 EXP_ROUNDS(EXP_DI, EXP_MI) = roundCount;
@@ -99,6 +111,9 @@ for EXP_DI = 1:EXP_ND
         clearvars('-except', EXP_KEEP{:});
     end
     fprintf('day %2d/%d  %s  (%.1f min elapsed)\n', EXP_DI, EXP_ND, EXP_DAYS{EXP_DI}, toc(EXP_T0)/60);
+    SaveStudy(EXP_OUT, EXP_LABELS, EXP_OVL, EXP_TIME, EXP_DEL, EXP_ROUNDS, EXP_INEX, EXP_INIT, ...
+              EXP_DAYS, EXP_KAPPAS, EXP_CAP, EXP_NF, EXP_NS, EXP_FORCED(:, numel(EXP_KAPPAS)+2), ...
+              EXP_MILPLB, EXP_MILPEXIT, EXP_MILPTIME, EXP_DELAYVEC, EXP_CTRL);   % partial results survive an interruption
 end
 
 labels = EXP_LABELS; overload = EXP_OVL; comptime = EXP_TIME; delayed = EXP_DEL;
@@ -107,9 +122,9 @@ days = EXP_DAYS; kappas = EXP_KAPPAS; capacityUsed = EXP_CAP;
 nFlights = EXP_NF; nSectors = EXP_NS;
 strategicForced = EXP_FORCED(:, numel(EXP_KAPPAS)+2);
 milpLowerBound = EXP_MILPLB; milpExitflag = EXP_MILPEXIT; milpTimeLimit = EXP_MILPTIME;
-save(EXP_OUT, 'labels','overload','comptime','delayed','rounds','inexact', ...
-     'initialOverload','days','kappas','capacityUsed','nFlights','nSectors', ...
-     'strategicForced','milpLowerBound','milpExitflag','milpTimeLimit');
+SaveStudy(EXP_OUT, labels, overload, comptime, delayed, rounds, inexact, initialOverload, ...
+          days, kappas, capacityUsed, nFlights, nSectors, strategicForced, ...
+          milpLowerBound, milpExitflag, milpTimeLimit, EXP_DELAYVEC, EXP_CTRL);
 
 fprintf('\n===== BREST per-day, D = %d, %d days =====\n', capacityUsed, EXP_ND);
 fprintf('initial overload: median %.0f  (%.0f .. %.0f) aircraft-s\n\n', ...
@@ -124,6 +139,17 @@ end
 fprintf('\nbest responses not proven optimal: %d\n', sum(inexact(:),'omitnan'));
 fprintf('centralized MILP proven optimal on %d of %d days (exitflag 1)\n', nnz(milpExitflag==1), EXP_ND);
 fprintf('wrote %s  (%.1f min)\n', EXP_OUT, toc(EXP_T0)/60);
+
+function SaveStudy(out, labels, overload, comptime, delayed, rounds, inexact, initialOverload, ...
+                   days, kappas, capacityUsed, nFlights, nSectors, strategicForced, ...
+                   milpLowerBound, milpExitflag, milpTimeLimit, delayVec, controlSector) %#ok<INUSD>
+% delayVec{d,k}: per-flight delay in action steps (x timeunit), method k, day d
+% controlSector{d}: controlling sector id of each flight on day d
+save(out, 'labels','overload','comptime','delayed','rounds','inexact', ...
+     'initialOverload','days','kappas','capacityUsed','nFlights','nSectors', ...
+     'strategicForced','milpLowerBound','milpExitflag','milpTimeLimit', ...
+     'delayVec','controlSector');
+end
 
 function s = KappaLabel(k)
 if k == 0

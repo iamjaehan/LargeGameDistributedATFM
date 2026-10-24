@@ -84,7 +84,6 @@ ylim(ax1, [0, max(1.06, max(dataA(:),[],'omitnan')*1.06)]);
 legend(ax1, [hDay hMeanA], {'one day', 'mean'}, 'Location','northwest', ...
        'Box','off', 'FontSize', 9, 'TextColor', inkSecondary);
 ylabel(ax1, 'Overload cost / initial  [-]', 'FontSize', 11, 'Color', inkPrimary);
-PanelTitle(ax1, '(a)  Normalized final overload cost', inkPrimary);
 
 % ===================== (b) computation time ==============================
 ax2 = nexttile(tl); hold(ax2,'on');
@@ -118,7 +117,6 @@ end
 
 StyleAxis(ax2, S.labels, gridInk, inkPrimary, inkSecondary);
 ylabel(ax2, 'Computation time [s]', 'FontSize', 11, 'Color', inkPrimary);
-PanelTitle(ax2, '(b)  Computation time', inkPrimary);
 hDayB = scatter(ax2, nan, nan, 16, 'filled', ...
     'MarkerFaceColor', [0.45 0.45 0.45], 'MarkerFaceAlpha', 0.55, ...
     'MarkerEdgeColor','w', 'LineWidth', 0.3);
@@ -144,11 +142,11 @@ end
 
 % -------------------------------------------------------------------------
 function StyleAxis(ax, labels, gridInk, inkPrimary, inkSecondary)
-% keep the ticks upright: push any parenthetical onto a second line instead
-% of rotating, which is harder to read and eats vertical space
-labels = regexprep(labels, '\s+\(', '\\newline(');
-set(ax, 'XTick', 1:numel(labels), 'XTickLabel', labels, ...
-        'TickLabelInterpreter','tex', 'FontSize', 10, ...
+% LaTeX tick labels.  A parenthetical goes onto a second line inside a
+% centred array, so both lines are centred on the tick (with the tex
+% interpreter the second line was left-aligned to the first).
+set(ax, 'XTick', 1:numel(labels), 'XTickLabel', LatexTickLabels(labels), ...
+        'TickLabelInterpreter','latex', 'FontSize', 11, ...
         'XColor', inkSecondary, 'YColor', inkSecondary, ...
         'Box','off', 'TickDir','out', 'Layer','top');
 ax.YGrid = 'on'; ax.XGrid = 'off';
@@ -156,6 +154,23 @@ ax.GridColor = gridInk; ax.GridAlpha = 1; ax.GridLineStyle = '-';
 ax.XTickLabelRotation = 0;
 xlim(ax, [0.4 numel(labels)+0.6]);
 ax.XLabel.Color = inkPrimary;
+end
+
+function out = LatexTickLabels(labels)
+out = cell(size(labels));
+for k = 1:numel(labels)
+    s = strtrim(regexprep(labels{k}, 'MILP', ''));     % "Centralized MILP" -> "Centralized"
+    if contains(s, '\kappa')
+        out{k} = ['$' s '$'];
+    else
+        tok = regexp(s, '^(.*?)\s*\((.*)\)$', 'tokens', 'once');
+        if isempty(tok)
+            out{k} = s;
+        else
+            out{k} = ['$\begin{array}{c}\mathrm{' tok{1} '}\\\mathrm{(' tok{2} ')}\end{array}$'];
+        end
+    end
+end
 end
 
 function PanelTitle(ax, s, ink)
