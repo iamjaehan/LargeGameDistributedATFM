@@ -22,6 +22,12 @@ Devel/*.gif
 !Devel/BrestDays_D7_tiebreak.pdf
 !Devel/BrestDelayFairness_D7_tiebreak.png
 !Devel/BrestDelayFairness_D7_tiebreak.pdf
+!Devel/BrestDays_D10.png
+!Devel/BrestDays_D10.pdf
+!Devel/EuropeScalingTime.png
+!Devel/EuropeScalingTime.pdf
+!Devel/EuropeScaling.png
+!Devel/EuropeScaling.pdf
 
 # Scratch experiment drivers
 Devel/*_tmp.m

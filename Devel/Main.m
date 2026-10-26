@@ -14,7 +14,7 @@ flightn = length(controlledFlights);
 
 n = flightn; 
 epsilon = 1;
-algorithm = 1; %1 - Ours, 3 - FCFS (reactive), 4 - Strategic FCFS, 5 - Centralized MILP (BREST only); 2 (GA centralized) removed
+algorithm = 1; %1 - Ours, 3 - FCFS (reactive), 4 - Strategic FCFS, 5 - Centralized MILP; 2 (GA centralized) removed
 milpMaxTime = 3600;      % s, intlinprog time limit for algorithm 5
 brMaxTime = 600;         % s, intlinprog time limit for each best response (algorithm 1)
 % capacity = 7;
@@ -116,6 +116,7 @@ end
 %% Search Equilibrium (Ours)
 if algorithm == 1
 optAction = cell(m,1);
+brTimeLog = zeros(0,3);   % [round, sector index, best-response solve time in s], every solved best response
 solveTime = zeros(m,1);
 potentialCost = inf;
 prevPotentialCost = inf;
@@ -181,6 +182,7 @@ for i = 1:m % Compute the Best Response for each sector
         continue;
     end
     solveTime(i) = toc;
+    brTimeLog(end+1,:) = [roundCount, i, solveTime(i)]; %#ok<SAGROW>
     % Update occupancyMatrix
     if ~isempty(optAction{i})
         action(flightsUnderControl) = optAction{i};
@@ -305,11 +307,8 @@ solveTime = toc;
 disp("Strategic FCFS: "+num2str(fcfsInfo.nDelayed)+" flights delayed, "+ ...
      num2str(fcfsInfo.nForced)+" could not be placed within the action set (added overload "+ ...
      num2str(fcfsInfo.forcedOverload)+")")
-%% Centralized MILP (exact, intlinprog) -- BREST only for now
+%% Centralized MILP (exact, intlinprog)
 elseif algorithm == 5
-if ~strcmp(dataset, 'brest')
-    error('Main:milpDataset', 'The MILP benchmark (algorithm 5) is set up for the BREST dataset only.');
-end
 [optAction, occupancyMatrix, milpInfo] = SolveMILP(initialOccupancyMatrix, assigned_sector, sector_ids, flights, earliest, timeunit, capacity, maxActionStep, milpMaxTime);
 solveTime = milpInfo.buildTime + milpInfo.solveTime;
 disp("MILP: overload "+num2str(milpInfo.overload)+" (lower bound "+num2str(milpInfo.overloadLowerBound)+ ...

@@ -5,7 +5,8 @@
 % here is stochastic: the best responses are exact MILPs and both FCFS
 % baselines are deterministic, which is why there is no Monte Carlo loop.
 %
-%   >> RunBrestDays            % writes exp_brest_days_D7.mat
+%   >> RunBrestDays                       % D = 7, writes exp_brest_days_D7.mat
+%   >> EXP_CAP = 10; RunBrestDays         % D = 10, writes exp_brest_days_D10.mat
 %   >> PlotBrestDays('exp_brest_days_D7.mat')
 %
 % Parse the days first if parsed/brest_*.mat is missing:
@@ -18,11 +19,11 @@
 % uninterrupted run of this script is the way to get comparable times; the
 % overload numbers are deterministic and come out identical either way.
 
-EXP_CAP     = 7;                             % sector capacity D
+if ~exist('EXP_CAP', 'var'), EXP_CAP = 7; end   % sector capacity D (set before calling to change)
 EXP_KAPPAS  = [0, 1e-6, 0.5, 1];             % the paper's kappa set (1e-6 meets the refined Theorem 1 bound, docs/theorem1_refined_kappa_bound.md)
 EXP_ALGS    = [3 4 5];                       % 3/4 = FCFS reactive/strategic, 5 = centralized MILP
 EXP_MILPTIME = Inf;                          % no time limit: the MILP column is solved to proven optimality
-EXP_OUT     = 'exp_brest_days_D7.mat';
+EXP_OUT     = sprintf('exp_brest_days_D%d.mat', EXP_CAP);
 EXP_MINFL   = 100;                           % skip truncated days (230712 has 37)
 
 EXP_LABELS = [ arrayfun(@KappaLabel, EXP_KAPPAS, 'UniformOutput', false), ...
