@@ -27,24 +27,28 @@ inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36]; gridInk = [0.88 
 cInit = [0.84 0.47 0.44];
 
 fig = figure('Color','w','Position',[10 10 1400 500]);
+% Times for every non-LaTeX label (axis labels, legends, text, ticks); set on
+% the figure before any axes exist so every child inherits it
+set(fig, 'DefaultAxesFontName', 'Times New Roman', 'DefaultTextFontName', 'Times New Roman', ...
+         'DefaultLegendFontName', 'Times New Roman', 'DefaultColorbarFontName', 'Times New Roman');
 tl = tiledlayout(fig, 1, 2, 'TileSpacing','compact', 'Padding','compact');
 tl.OuterPosition = [0 0 0.98 1];
 
 ax1 = nexttile(tl); hold(ax1, 'on');
-yline(ax1, 1, '--', 'no reduction', 'Color', cInit, 'LineWidth', 1.1, 'FontSize', 11, ...
+yline(ax1, 1, '--', 'no reduction', 'FontName', 'Times New Roman', 'Color', cInit, 'LineWidth', 1.1, 'FontSize', 11, ...
       'LabelHorizontalAlignment','right', 'LabelVerticalAlignment','bottom', 'HandleVisibility','off');
 h1 = DrawSeries(ax1, n, ratio, colors, markers);
 set(ax1, 'XScale', 'log'); ylim(ax1, [-0.06 1.4]);   % headroom for the legend
 ylabel(ax1, 'Overload cost / initial  [-]', 'FontSize', 14, 'Color', inkPrimary);
 Style(ax1, n, gridInk, inkPrimary, inkSecondary);
-legend(ax1, h1, labels, 'Interpreter','latex', 'Location','northwest', 'Box','off', 'FontSize', 12);
+legend(ax1, h1, labels, 'Interpreter','latex', 'Location','northwest', 'Box','on', 'EdgeColor', [0.72 0.72 0.70], 'Color', 'w', 'FontSize', 12);
 
 ax2 = nexttile(tl); hold(ax2, 'on');
 h2 = DrawSeries(ax2, n, time, colors, markers);
 set(ax2, 'XScale', 'log', 'YScale', 'log');
 ylabel(ax2, 'Computation time [s]', 'FontSize', 14, 'Color', inkPrimary);
 Style(ax2, n, gridInk, inkPrimary, inkSecondary);
-legend(ax2, h2, labels, 'Interpreter','latex', 'Location','northwest', 'Box','off', 'FontSize', 12);
+legend(ax2, h2, labels, 'Interpreter','latex', 'Location','northwest', 'Box','on', 'EdgeColor', [0.72 0.72 0.70], 'Color', 'w', 'FontSize', 12);
 
 [~, stem] = fileparts(matFile);
 outStem = regexprep(stem, '^exp_europe_scaling', 'EuropeScaling');

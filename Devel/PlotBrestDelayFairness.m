@@ -61,6 +61,10 @@ inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36];
 gridInk = [0.88 0.88 0.86];
 
 fig = figure('Color','w','Position',[10 10 1400 500]);
+% Times for every non-LaTeX label (axis labels, legends, text, ticks); set on
+% the figure before any axes exist so every child inherits it
+set(fig, 'DefaultAxesFontName', 'Times New Roman', 'DefaultTextFontName', 'Times New Roman', ...
+         'DefaultLegendFontName', 'Times New Roman', 'DefaultColorbarFontName', 'Times New Roman');
 tl = tiledlayout(fig, 1, 2, 'TileSpacing','compact', 'Padding','compact');
 tl.OuterPosition = [0 0 0.98 1];   % right margin so the last (LaTeX) tick label is not clipped
 
@@ -117,8 +121,8 @@ hMean = plot(ax, 1:nM, mean(data, 1, 'omitnan'), 'd', 'MarkerSize', 7, ...
     'MarkerFaceColor', 'w', 'MarkerEdgeColor', inkPrimary, 'LineWidth', 1.1, 'LineStyle', 'none');
 hDay = scatter(ax, nan, nan, 16, 'filled', 'MarkerFaceColor', [0.45 0.45 0.45], ...
     'MarkerFaceAlpha', 0.55, 'MarkerEdgeColor', 'w', 'LineWidth', 0.3);
-legend(ax, [hDay hMean], {'one day', 'mean'}, 'Location', 'northwest', 'Box', 'off', ...
-       'FontSize', 9, 'TextColor', inkSecondary);
+legend(ax, [hDay hMean], {'one day', 'mean'}, 'Location', 'northwest', 'Box','on', 'EdgeColor', [0.72 0.72 0.70], 'Color', 'w', ...
+       'FontSize', 10.35, 'TextColor', inkSecondary);
 end
 
 function StyleAxis(ax, labels, gridInk, inkPrimary, inkSecondary)

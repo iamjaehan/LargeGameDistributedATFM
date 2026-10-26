@@ -29,6 +29,10 @@ colors = [cK; cBase];
 inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36]; gridInk = [0.88 0.88 0.86];
 
 fig = figure('Color','w','Position',[10 10 1400 500]);
+% Times for every non-LaTeX label (axis labels, legends, text, ticks); set on
+% the figure before any axes exist so every child inherits it
+set(fig, 'DefaultAxesFontName', 'Times New Roman', 'DefaultTextFontName', 'Times New Roman', ...
+         'DefaultLegendFontName', 'Times New Roman', 'DefaultColorbarFontName', 'Times New Roman');
 tl = tiledlayout(fig, 1, 2, 'TileSpacing','compact', 'Padding','compact');
 tl.OuterPosition = [0 0 0.98 1];   % right margin so the last (LaTeX) tick label is not clipped
 ax1 = nexttile(tl); ax2 = nexttile(tl);
@@ -41,6 +45,9 @@ ylabel(ax2, 'Gini index of mean delay per sector [-]', 'FontSize', 14, 'Color', 
 drawnow;                          % final axes geometry, needed for 45-degree hatching
 PairedBoxes(ax1, dA, dB, touched, colors, inkPrimary);
 PairedBoxes(ax2, gA, gB, touched, colors, inkPrimary);
+% grid behind the data, so the key's white background hides the grid lines
+% (Layer 'top' draws them over every child)
+set([ax1 ax2], 'Layer', 'bottom');
 KeyBox(ax1, inkPrimary, inkSecondary);
 
 exportgraphics(fig, [outStem '.pdf'], 'ContentType','vector', 'Padding', 12);   % tight crop clips LaTeX tick labels
@@ -71,7 +78,13 @@ function PairedBoxes(ax, before, after, touched, colors, inkPrimary)
 hold(ax, 'on');
 off = 0.19; bw = 0.32; nM = size(before, 2);
 % separators between methods, drawn first so they sit behind the boxes
-xline(ax, 1.5:1:nM-0.5, '-', 'Color', [0.74 0.74 0.72], 'LineWidth', 0.9, 'HandleVisibility', 'off');
+% plain lines rather than xline: ConstantLines draw above other children, which
+% would show through the key's white background
+yl = ylim(ax);
+for xs = 1.5:1:nM-0.5
+    plot(ax, [xs xs], yl, '-', 'Color', [0.74 0.74 0.72], 'LineWidth', 0.9, 'HandleVisibility', 'off');
+end
+ylim(ax, yl);
 for k = 1:nM
     if touched(k)
         Box1(ax, k - off, before(:,k), colors(k,:), 'filled',  bw, inkPrimary);
@@ -130,16 +143,27 @@ function KeyBox(ax, inkPrimary, inkSecondary)
 xl = xlim(ax); yl = ylim(ax); X = @(f) xl(1) + f*diff(xl); Y = @(f) yl(1) + f*diff(yl);
 g = [0.55 0.55 0.53]; w = 0.035*diff(xl); h = 0.035*diff(yl);
 x0 = X(0.03); y1 = Y(0.94); y2 = Y(0.875);
+t = gobjects(1,4);
+nBefore = numel(ax.Children);
 patch(ax, x0 + [0 w w 0], y1 + [0 0 h h] - h/2, g, 'FaceAlpha', 0.25, 'EdgeColor', g, 'LineWidth', 1.2);
-text(ax, x0 + 1.4*w, y1, 'without tie-break', 'FontSize', 9, 'Color', inkSecondary);
+t(1) = text(ax, x0 + 1.4*w, y1, 'without tie-break', 'FontSize', 10.35, 'Color', inkSecondary);
 Hatch(ax, x0, x0 + w, y2 - h/2, y2 + h/2, g*0.7);
 patch(ax, x0 + [0 w w 0], y2 + [0 0 h h] - h/2, 'w', 'FaceColor', 'none', 'EdgeColor', g, 'LineWidth', 1.2);
-text(ax, x0 + 1.4*w, y2, 'with tie-break', 'FontSize', 9, 'Color', inkSecondary);
+t(2) = text(ax, x0 + 1.4*w, y2, 'with tie-break', 'FontSize', 10.35, 'Color', inkSecondary);
 x1 = X(0.30);
 scatter(ax, x1 + w/2, y1, 14, 'filled', 'MarkerFaceColor', [0.45 0.45 0.45], 'MarkerFaceAlpha', 0.55, 'MarkerEdgeColor', 'w');
-text(ax, x1 + 1.4*w, y1, 'one day', 'FontSize', 9, 'Color', inkSecondary);
+t(3) = text(ax, x1 + 1.4*w, y1, 'one day', 'FontSize', 10.35, 'Color', inkSecondary);
 plot(ax, x1 + w/2, y2, 'd', 'MarkerSize', 6, 'MarkerFaceColor', 'w', 'MarkerEdgeColor', inkPrimary, 'LineWidth', 1.0);
-text(ax, x1 + 1.4*w, y2, 'mean', 'FontSize', 9, 'Color', inkSecondary);
+t(4) = text(ax, x1 + 1.4*w, y2, 'mean', 'FontSize', 10.35, 'Color', inkSecondary);
+% frame around the key, like the boxed legends of the other figures
+drawnow;
+e = vertcat(t.Extent);                          % [x y w h] in data units
+right = max(e(:,1) + e(:,3));
+padX = 0.012*diff(xl); padY = 0.022*diff(yl);
+r = rectangle(ax, 'Position', [x0 - padX, y2 - h/2 - padY, right - x0 + 2*padX, (y1 - y2) + h + 2*padY], ...
+          'EdgeColor', [0.72 0.72 0.70], 'FaceColor', 'w', 'LineWidth', 0.5);
+% white background: behind the key items, in front of the separators
+uistack(r, 'down', numel(ax.Children) - nBefore - 1);
 end
 
 function StyleAxis(ax, labels, gridInk, inkPrimary, inkSecondary)

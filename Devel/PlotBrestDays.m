@@ -40,6 +40,10 @@ inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36];
 gridInk = [0.88 0.88 0.86];
 
 fig = figure('Color','w','Position',[10 10 1400 500]);
+% Times for every non-LaTeX label (axis labels, legends, text, ticks); set on
+% the figure before any axes exist so every child inherits it
+set(fig, 'DefaultAxesFontName', 'Times New Roman', 'DefaultTextFontName', 'Times New Roman', ...
+         'DefaultLegendFontName', 'Times New Roman', 'DefaultColorbarFontName', 'Times New Roman');
 tl = tiledlayout(fig, 1, 2, 'TileSpacing','compact', 'Padding','compact');
 tl.OuterPosition = [0 0 0.98 1];   % right margin so the last (LaTeX) tick label is not clipped
 
@@ -53,7 +57,7 @@ colorsA = [cK; cBase];
 nA      = numel(labelsA);
 
 ax1 = nexttile(tl); hold(ax1,'on');
-yline(ax1, 1, '--', 'no reduction', 'Color', cInit, 'LineWidth', 1.1, ...
+yline(ax1, 1, '--', 'no reduction', 'FontName', 'Times New Roman', 'Color', cInit, 'LineWidth', 1.1, ...
       'FontSize', 9, 'LabelHorizontalAlignment','right', ...
       'LabelVerticalAlignment','bottom');
 
@@ -84,7 +88,7 @@ hDay = scatter(ax1, nan, nan, 16, 'filled', ...
 StyleAxis(ax1, labelsA, gridInk, inkPrimary, inkSecondary);
 ylim(ax1, [0, max(1.18, max(dataA(:),[],'omitnan')*1.06)]);   % room for the legend above the 'no reduction' line
 legend(ax1, [hDay hMeanA], {'one day', 'mean'}, 'Location','northwest', ...
-       'Box','off', 'FontSize', 9, 'TextColor', inkSecondary);
+       'Box','on', 'EdgeColor', [0.72 0.72 0.70], 'Color', 'w', 'FontSize', 10.35, 'TextColor', inkSecondary);
 ylabel(ax1, 'Overload cost / initial  [-]', 'FontSize', 14, 'Color', inkPrimary);
 
 % ===================== (b) computation time ==============================
@@ -123,8 +127,8 @@ ylabel(ax2, 'Computation time [s]', 'FontSize', 14, 'Color', inkPrimary);
 hDayB = scatter(ax2, nan, nan, 16, 'filled', ...
     'MarkerFaceColor', [0.45 0.45 0.45], 'MarkerFaceAlpha', 0.55, ...
     'MarkerEdgeColor','w', 'LineWidth', 0.3);
-legend(ax2, [hDayB hMean], {'one day', 'mean'}, 'Location','northwest', 'Box','off', ...
-       'FontSize', 9, 'TextColor', inkSecondary);
+legend(ax2, [hDayB hMean], {'one day', 'mean'}, 'Location','northwest', 'Box','on', 'EdgeColor', [0.72 0.72 0.70], 'Color', 'w', ...
+       'FontSize', 10.35, 'TextColor', inkSecondary);
 
 exportgraphics(fig, [outStem '.pdf'], 'ContentType','vector', 'Padding', 12);   % tight crop clips LaTeX tick labels
 exportgraphics(fig, [outStem '.png'], 'Resolution', 300, 'Padding', 12);

@@ -51,6 +51,10 @@ labels = {'$\kappa = 0$ (total)', '$\kappa = 1$ (total)', '$\mathrm{Centralized}
 inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36]; gridInk = [0.88 0.88 0.86];
 
 fig = figure('Color','w','Position',[10 10 760 520]);
+% Times for every non-LaTeX label (axis labels, legends, text, ticks); set on
+% the figure before any axes exist so every child inherits it
+set(fig, 'DefaultAxesFontName', 'Times New Roman', 'DefaultTextFontName', 'Times New Roman', ...
+         'DefaultLegendFontName', 'Times New Roman', 'DefaultColorbarFontName', 'Times New Roman');
 ax = axes(fig); hold(ax, 'on');
 set(ax, 'XScale','log', 'YScale','log');
 if S > 1
@@ -76,7 +80,7 @@ yl = [min(lo(:)), max(hi(:))];
 ylim(ax, [10^floor(log10(yl(1))), 10^ceil(log10(yl(2)))]);
 xlabel(ax, 'Number of aircraft', 'FontSize', 14, 'Color', inkPrimary);
 ylabel(ax, 'Computation time [s]', 'FontSize', 14, 'Color', inkPrimary);
-legend(ax, h, labels, 'Interpreter','latex', 'Location','northwest', 'Box','off', 'FontSize', 12);
+legend(ax, h, labels, 'Interpreter','latex', 'Location','northwest', 'Box','on', 'EdgeColor', [0.72 0.72 0.70], 'Color', 'w', 'FontSize', 12);
 
 exportgraphics(fig, [outStem '.pdf'], 'ContentType','vector', 'Padding', 12);
 exportgraphics(fig, [outStem '.png'], 'Resolution', 300, 'Padding', 12);
