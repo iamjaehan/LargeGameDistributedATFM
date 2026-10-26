@@ -1,16 +1,21 @@
-function PlotBrestDelayFairnessCompare(beforeFile, afterFile, outStem)
+function PlotBrestDelayFairnessCompare(beforeFile, afterFile, outStem, outDir, splitStems)
 % Delay per aircraft and inter-sector Gini, without vs with the delay
 % tie-break, in one figure: per method a hollow box (without) and a filled
 % box (with) side by side, every day as a dot, mean as a diamond.  Methods
 % whose schedules the tie-break does not touch (the FCFS baselines) get one
 % centred box.  Metrics as in PlotBrestDelayFairness.
 %
-%   PlotBrestDelayFairnessCompare('exp_brest_days_D7.mat', ...
-%                                 'exp_brest_days_D7_tiebreak.mat')
+%   PlotBrestDelayFairnessCompare(before, after)                       % combined
+%   PlotBrestDelayFairnessCompare(before, after, '', dir, ...
+%                                 {'DelayCompare','GiniCompare'})      % one file per panel
 
 if nargin < 1 || isempty(beforeFile), beforeFile = 'exp_brest_days_D7.mat'; end
 if nargin < 2 || isempty(afterFile),  afterFile  = 'exp_brest_days_D7_tiebreak.mat'; end
 if nargin < 3 || isempty(outStem),    outStem    = 'BrestDelayFairnessCompare_D7'; end
+if nargin < 4, outDir = ''; end
+if nargin < 5, splitStems = {}; end
+split = ~isempty(splitStems);
+if ~isempty(outDir) && ~isfolder(outDir), mkdir(outDir); end
 A = load(beforeFile); B = load(afterFile);
 assert(isequal(A.days, B.days) && isequal(A.labels, B.labels), 'files do not match');
 [dA, gA] = Metrics(A); [dB, gB] = Metrics(B);
@@ -26,33 +31,56 @@ cBase = repmat([0.62 0.62 0.60], nM-nK, 1);
 isMilp = contains(A.labels(nK+1:end), 'MILP');
 cBase(isMilp, :) = repmat([0.30 0.30 0.28], nnz(isMilp), 1);
 colors = [cK; cBase];
-inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36]; gridInk = [0.88 0.88 0.86];
+inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36]; gridInk = [0.79 0.79 0.77];   % ~10% darker than the MATLAB-ish default grey
 
-fig = figure('Color','w','Position',[10 10 1400 500]);
-% Times for every non-LaTeX label (axis labels, legends, text, ticks); set on
-% the figure before any axes exist so every child inherits it
-set(fig, 'DefaultAxesFontName', 'Times New Roman', 'DefaultTextFontName', 'Times New Roman', ...
-         'DefaultLegendFontName', 'Times New Roman', 'DefaultColorbarFontName', 'Times New Roman');
-tl = tiledlayout(fig, 1, 2, 'TileSpacing','compact', 'Padding','compact');
-tl.OuterPosition = [0 0 0.98 1];   % right margin so the last (LaTeX) tick label is not clipped
-ax1 = nexttile(tl); ax2 = nexttile(tl);
+if split
+    [figA, ax1] = NewPanelFigure();
+    [figB, ax2] = NewPanelFigure();
+else
+    fig = figure('Color','w','Position',[10 10 1400 500]);
+    SetTimes(fig);
+    tl = tiledlayout(fig, 1, 2, 'TileSpacing','compact', 'Padding','compact');
+    tl.OuterPosition = [0 0 0.98 1];   % right margin so the last (LaTeX) tick label is not clipped
+    ax1 = nexttile(tl); ax2 = nexttile(tl);
+end
 StyleAxis(ax1, A.labels, gridInk, inkPrimary, inkSecondary);
 StyleAxis(ax2, A.labels, gridInk, inkPrimary, inkSecondary);
 ylim(ax1, [0, max([dA(:); dB(:)], [], 'omitnan')*1.18]);
 ylim(ax2, [0, 1]);
-ylabel(ax1, 'Average delay per aircraft [min]', 'FontSize', 14, 'Color', inkPrimary);
-ylabel(ax2, 'Gini index of mean delay per sector [-]', 'FontSize', 14, 'Color', inkPrimary);
+ylabel(ax1, 'Average delay per aircraft [min]', 'FontSize', 17, 'Color', inkPrimary);
+ylabel(ax2, 'Gini index', 'FontSize', 17, 'Color', inkPrimary);
 drawnow;                          % final axes geometry, needed for 45-degree hatching
 PairedBoxes(ax1, dA, dB, touched, colors, inkPrimary);
 PairedBoxes(ax2, gA, gB, touched, colors, inkPrimary);
 % grid behind the data, so the key's white background hides the grid lines
 % (Layer 'top' draws them over every child)
 set([ax1 ax2], 'Layer', 'bottom');
-KeyBox(ax1, inkPrimary, inkSecondary);
+KeyBox(ax1, inkPrimary, inkSecondary);   % delay panel only; the Gini panel stays clean
+if split
+    ExportPanel(figA, fullfile(outDir, splitStems{1}));
+    ExportPanel(figB, fullfile(outDir, splitStems{2}));
+else
+    ExportPanel(fig, fullfile(outDir, outStem));
+end
+end
 
-exportgraphics(fig, [outStem '.pdf'], 'ContentType','vector', 'Padding', 12);   % tight crop clips LaTeX tick labels
-exportgraphics(fig, [outStem '.png'], 'Resolution', 300, 'Padding', 12);
-fprintf('wrote %s.pdf / %s.png\n', outStem, outStem);
+% -------------------------------------------------------------------------
+function [fig, ax] = NewPanelFigure()
+fig = figure('Color','w','Position',[10 10 720 500]);
+SetTimes(fig);
+tl = tiledlayout(fig, 1, 1, 'TileSpacing','compact', 'Padding','compact');
+tl.OuterPosition = [0 0 0.97 1];
+ax = nexttile(tl);
+end
+
+function SetTimes(fig)
+set(fig, 'DefaultAxesFontName', 'Times New Roman', 'DefaultTextFontName', 'Times New Roman', ...
+         'DefaultLegendFontName', 'Times New Roman', 'DefaultColorbarFontName', 'Times New Roman');
+end
+
+function ExportPanel(fig, stem)
+exportgraphics(fig, [stem '.pdf'], 'ContentType','vector', 'Padding', 12);
+fprintf('wrote %s.pdf\n', stem);
 end
 
 % -------------------------------------------------------------------------
@@ -146,15 +174,15 @@ x0 = X(0.03); y1 = Y(0.94); y2 = Y(0.875);
 t = gobjects(1,4);
 nBefore = numel(ax.Children);
 patch(ax, x0 + [0 w w 0], y1 + [0 0 h h] - h/2, g, 'FaceAlpha', 0.25, 'EdgeColor', g, 'LineWidth', 1.2);
-t(1) = text(ax, x0 + 1.4*w, y1, 'without tie-break', 'FontSize', 10.35, 'Color', inkSecondary);
+t(1) = text(ax, x0 + 1.4*w, y1, 'without tie-break', 'FontSize', 13, 'Color', inkSecondary);
 Hatch(ax, x0, x0 + w, y2 - h/2, y2 + h/2, g*0.7);
 patch(ax, x0 + [0 w w 0], y2 + [0 0 h h] - h/2, 'w', 'FaceColor', 'none', 'EdgeColor', g, 'LineWidth', 1.2);
-t(2) = text(ax, x0 + 1.4*w, y2, 'with tie-break', 'FontSize', 10.35, 'Color', inkSecondary);
+t(2) = text(ax, x0 + 1.4*w, y2, 'with tie-break', 'FontSize', 13, 'Color', inkSecondary);
 x1 = X(0.30);
 scatter(ax, x1 + w/2, y1, 14, 'filled', 'MarkerFaceColor', [0.45 0.45 0.45], 'MarkerFaceAlpha', 0.55, 'MarkerEdgeColor', 'w');
-t(3) = text(ax, x1 + 1.4*w, y1, 'one day', 'FontSize', 10.35, 'Color', inkSecondary);
+t(3) = text(ax, x1 + 1.4*w, y1, 'one day', 'FontSize', 13, 'Color', inkSecondary);
 plot(ax, x1 + w/2, y2, 'd', 'MarkerSize', 6, 'MarkerFaceColor', 'w', 'MarkerEdgeColor', inkPrimary, 'LineWidth', 1.0);
-t(4) = text(ax, x1 + 1.4*w, y2, 'mean', 'FontSize', 10.35, 'Color', inkSecondary);
+t(4) = text(ax, x1 + 1.4*w, y2, 'mean', 'FontSize', 13, 'Color', inkSecondary);
 % frame around the key, like the boxed legends of the other figures
 drawnow;
 e = vertcat(t.Extent);                          % [x y w h] in data units
@@ -166,30 +194,58 @@ r = rectangle(ax, 'Position', [x0 - padX, y2 - h/2 - padY, right - x0 + 2*padX, 
 uistack(r, 'down', numel(ax.Children) - nBefore - 1);
 end
 
-function StyleAxis(ax, labels, gridInk, inkPrimary, inkSecondary)
-set(ax, 'XTick', 1:numel(labels), 'XTickLabel', LatexTickLabels(labels), ...
-        'TickLabelInterpreter','latex', 'FontSize', 13, ...
+function StyleAxis(ax, labels, gridInk, inkPrimary, inkSecondary, subSize)
+% subSize: font size for the parenthetical second line, drawn as its own text
+% so it is not locked to 70% of the tick size by \scriptstyle
+if nargin < 6, subSize = 12.3; end
+set(ax, 'XTick', 1:numel(labels), 'XTickLabel', LatexTickLabels(labels, subSize), ...
+        'TickLabelInterpreter','latex', 'FontSize', 16, ...   % 17+ makes the kappa labels collide
         'XColor', inkSecondary, 'YColor', inkSecondary, ...
-        'Box','off', 'TickDir','out', 'Layer','top');
+        'Box','on', 'LineWidth', 0.9, 'TickDir','out', 'Layer','top');   % full frame, as in the original paper figures
 ax.YGrid = 'on'; ax.XGrid = 'off';
+ax.YMinorGrid = 'on';   % the faint lines between the labelled ticks
+ax.MinorGridAlpha = 0.275;
 ax.GridColor = gridInk; ax.GridAlpha = 1; ax.GridLineStyle = '-';
 ax.XTickLabelRotation = 0;
-xlim(ax, [0.4 numel(labels)+0.75]);   % extra room: the last LaTeX tick label was clipped
+xlim(ax, [0.45 numel(labels)+0.5]);   % CENT needs less right margin than 'Centralized' did   % extra room: the last LaTeX tick label was clipped
 ax.XLabel.Color = inkPrimary;
+AddSubLabels(ax, labels, subSize, inkSecondary);
 end
 
-function out = LatexTickLabels(labels)
+function AddSubLabels(ax, labels, subSize, ink)
+% "FCFS (reactive)" -> "(reactive)" under the tick, in normalized axes units so
+% it sits correctly on a log y axis too
+if subSize <= 0, return; end
+xl = xlim(ax);
+for k = 1:numel(labels)
+    tok = regexp(strtrim(regexprep(labels{k}, 'MILP', '')), '^(.*?)\s*\((.*)\)$', 'tokens', 'once');
+    if isempty(tok), continue; end
+    text(ax, (k - xl(1))/diff(xl), -0.085, ['(' tok{2} ')'], 'Units', 'normalized', ...
+         'HorizontalAlignment', 'center', 'VerticalAlignment', 'top', ...
+         'FontName', 'Times New Roman', 'FontSize', subSize, 'Color', ink, 'Clipping', 'off');
+end
+end
+
+function out = LatexTickLabels(labels, subSize)
+if nargin < 2, subSize = 0; end
 out = cell(size(labels));
 for k = 1:numel(labels)
-    s = strtrim(regexprep(labels{k}, 'MILP', ''));
+    % "Centralized MILP" is abbreviated to CENT, on one line and without a
+    % parenthetical: spelled out it is the widest tick and runs into the FCFS
+    % label beside it at this panel width
+    s = regexprep(labels{k}, '^Centralized\s+MILP$', 'CENT');
     if contains(s, '\kappa')
         out{k} = ['$' s '$'];
     else
         tok = regexp(s, '^(.*?)\s*\((.*)\)$', 'tokens', 'once');
         if isempty(tok)
             out{k} = s;
+        elseif subSize > 0
+            out{k} = ['$\mathrm{' tok{1} '}$'];   % parenthetical drawn by AddSubLabels
         else
-            out{k} = ['$\begin{array}{c}\mathrm{' tok{1} '}\\\mathrm{(' tok{2} ')}\end{array}$'];
+            % \scriptstyle, not \footnotesize: MATLAB's latex interpreter
+            % silently drops the text-mode size commands
+            out{k} = ['$\begin{array}{c}\mathrm{' tok{1} '}\\\scriptstyle\mathrm{(' tok{2} ')}\end{array}$'];
         end
     end
 end

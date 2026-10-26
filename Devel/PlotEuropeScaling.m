@@ -39,7 +39,7 @@ yline(ax1, 1, '--', 'no reduction', 'FontName', 'Times New Roman', 'Color', cIni
       'LabelHorizontalAlignment','right', 'LabelVerticalAlignment','bottom', 'HandleVisibility','off');
 h1 = DrawSeries(ax1, n, ratio, colors, markers);
 set(ax1, 'XScale', 'log'); ylim(ax1, [-0.06 1.4]);   % headroom for the legend
-ylabel(ax1, 'Overload cost / initial  [-]', 'FontSize', 14, 'Color', inkPrimary);
+ylabel(ax1, 'Normalized overload cost', 'FontSize', 14, 'Color', inkPrimary);
 Style(ax1, n, gridInk, inkPrimary, inkSecondary);
 legend(ax1, h1, labels, 'Interpreter','latex', 'Location','northwest', 'Box','on', 'EdgeColor', [0.72 0.72 0.70], 'Color', 'w', 'FontSize', 12);
 

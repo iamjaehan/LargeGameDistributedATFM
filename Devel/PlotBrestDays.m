@@ -1,9 +1,10 @@
-function PlotBrestDays(matFile)
+function PlotBrestDays(matFile, outDir, splitStems)
 % Per-day distributions for the BREST study: one run per traffic day, so the
 % spread is real instance variation, not solver noise.
 %
-%   PlotBrestDays                        % reads exp_brest_days_D7.mat
-%   PlotBrestDays('other_study.mat')
+%   PlotBrestDays                              % combined, next to the data
+%   PlotBrestDays(f, dir)                      % combined, into dir
+%   PlotBrestDays(f, dir, {'Cost','Time'})     % one file per panel, into dir
 %
 % (a) overload cost  : box + the individual days as jittered dots, so the
 %                      reader sees the distribution AND every observation.
@@ -18,9 +19,13 @@ function PlotBrestDays(matFile)
 % so identity never rests on colour alone.
 
 if nargin < 1 || isempty(matFile), matFile = 'exp_brest_days_D7.mat'; end
+if nargin < 2, outDir = ''; end
+if nargin < 3, splitStems = {}; end
 S = load(matFile);
 [~, stem] = fileparts(matFile);
 outStem = regexprep(stem, '^exp_brest_days', 'BrestDays');
+split = ~isempty(splitStems);
+if ~isempty(outDir) && ~isfolder(outDir), mkdir(outDir); end
 
 nK = numel(S.kappas);
 nM = numel(S.labels);
@@ -35,17 +40,18 @@ cBase = repmat([0.62 0.62 0.60], nM-nK, 1);
 % darker neutral so it reads apart from the FCFS boxes
 cBase(contains(S.labels(nK+1:end), 'MILP'), :) = repmat([0.30 0.30 0.28], nnz(contains(S.labels(nK+1:end), 'MILP')), 1);
 cInit = [0.84 0.47 0.44];
+cRef  = [0.84 0.15 0.15];   % the threshold line and its label, in red
 
 inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36];
-gridInk = [0.88 0.88 0.86];
+gridInk = [0.79 0.79 0.77];   % ~10% darker than the MATLAB-ish default grey
 
-fig = figure('Color','w','Position',[10 10 1400 500]);
-% Times for every non-LaTeX label (axis labels, legends, text, ticks); set on
-% the figure before any axes exist so every child inherits it
-set(fig, 'DefaultAxesFontName', 'Times New Roman', 'DefaultTextFontName', 'Times New Roman', ...
-         'DefaultLegendFontName', 'Times New Roman', 'DefaultColorbarFontName', 'Times New Roman');
-tl = tiledlayout(fig, 1, 2, 'TileSpacing','compact', 'Padding','compact');
-tl.OuterPosition = [0 0 0.98 1];   % right margin so the last (LaTeX) tick label is not clipped
+if split
+    [figA, ax1] = NewPanelFigure();
+    [figB, ax2] = NewPanelFigure();
+else
+    [fig, tl] = NewCombinedFigure(); %#ok<ASGLU>
+    ax1 = nexttile(tl); ax2 = nexttile(tl);
+end
 
 % ===================== (a) overload cost =================================
 % Normalised by each day's OWN initial overload, so day difficulty divides
@@ -56,10 +62,10 @@ labelsA = S.labels;
 colorsA = [cK; cBase];
 nA      = numel(labelsA);
 
-ax1 = nexttile(tl); hold(ax1,'on');
-yline(ax1, 1, '--', 'no reduction', 'FontName', 'Times New Roman', 'Color', cInit, 'LineWidth', 1.1, ...
-      'FontSize', 9, 'LabelHorizontalAlignment','right', ...
-      'LabelVerticalAlignment','bottom');
+hold(ax1,'on');
+yline(ax1, 1, '--', 'Initial overload', 'FontName', 'Times New Roman', 'Color', cRef, 'LineWidth', 1.1, ...
+      'FontSize', 14.4, 'LabelHorizontalAlignment','center', ...
+      'LabelVerticalAlignment','top');
 
 for k = 1:nA
     v = dataA(:,k); v = v(~isnan(v));
@@ -88,11 +94,11 @@ hDay = scatter(ax1, nan, nan, 16, 'filled', ...
 StyleAxis(ax1, labelsA, gridInk, inkPrimary, inkSecondary);
 ylim(ax1, [0, max(1.18, max(dataA(:),[],'omitnan')*1.06)]);   % room for the legend above the 'no reduction' line
 legend(ax1, [hDay hMeanA], {'one day', 'mean'}, 'Location','northwest', ...
-       'Box','on', 'EdgeColor', [0.72 0.72 0.70], 'Color', 'w', 'FontSize', 10.35, 'TextColor', inkSecondary);
-ylabel(ax1, 'Overload cost / initial  [-]', 'FontSize', 14, 'Color', inkPrimary);
+       'Box','on', 'EdgeColor', [0.72 0.72 0.70], 'Color', 'w', 'FontSize', 13, 'TextColor', inkSecondary);
+ylabel(ax1, 'Normalized overload cost', 'FontSize', 17, 'Color', inkPrimary);
 
 % ===================== (b) computation time ==============================
-ax2 = nexttile(tl); hold(ax2,'on');
+hold(ax2,'on');
 colorsB = [cK; cBase];
 
 for k = 1:nM
@@ -123,16 +129,19 @@ if max(allT)/max(min(allT), eps) > 50
 end
 
 StyleAxis(ax2, S.labels, gridInk, inkPrimary, inkSecondary);
-ylabel(ax2, 'Computation time [s]', 'FontSize', 14, 'Color', inkPrimary);
+ylabel(ax2, 'Computation time [s]', 'FontSize', 17, 'Color', inkPrimary);
 hDayB = scatter(ax2, nan, nan, 16, 'filled', ...
     'MarkerFaceColor', [0.45 0.45 0.45], 'MarkerFaceAlpha', 0.55, ...
     'MarkerEdgeColor','w', 'LineWidth', 0.3);
 legend(ax2, [hDayB hMean], {'one day', 'mean'}, 'Location','northwest', 'Box','on', 'EdgeColor', [0.72 0.72 0.70], 'Color', 'w', ...
-       'FontSize', 10.35, 'TextColor', inkSecondary);
+       'FontSize', 13, 'TextColor', inkSecondary);
 
-exportgraphics(fig, [outStem '.pdf'], 'ContentType','vector', 'Padding', 12);   % tight crop clips LaTeX tick labels
-exportgraphics(fig, [outStem '.png'], 'Resolution', 300, 'Padding', 12);
-fprintf('wrote %s.pdf / %s.png\n', outStem, outStem);
+if split
+    ExportPanel(figA, fullfile(outDir, splitStems{1}));
+    ExportPanel(figB, fullfile(outDir, splitStems{2}));
+else
+    ExportPanel(fig, fullfile(outDir, outStem));
+end
 
 % ---- table view so the figure is never the only way to read the numbers
 red = 100*(1 - S.overload ./ S.initialOverload);
@@ -148,35 +157,92 @@ end
 end
 
 % -------------------------------------------------------------------------
-function StyleAxis(ax, labels, gridInk, inkPrimary, inkSecondary)
+function [fig, tl] = NewCombinedFigure()
+fig = figure('Color','w','Position',[10 10 1400 500]);
+SetTimes(fig);
+tl = tiledlayout(fig, 1, 2, 'TileSpacing','compact', 'Padding','compact');
+tl.OuterPosition = [0 0 0.98 1];   % right margin so the last (LaTeX) tick label is not clipped
+end
+
+function [fig, ax] = NewPanelFigure()
+% one panel on its own: half the combined width, same height, so the box
+% widths and font sizes land where they do in the two-panel version
+fig = figure('Color','w','Position',[10 10 720 500]);
+SetTimes(fig);
+tl = tiledlayout(fig, 1, 1, 'TileSpacing','compact', 'Padding','compact');
+tl.OuterPosition = [0 0 0.97 1];
+ax = nexttile(tl);
+end
+
+function SetTimes(fig)
+% Times for every non-LaTeX label (axis labels, legends, text, ticks); set on
+% the figure before any axes exist so every child inherits it
+set(fig, 'DefaultAxesFontName', 'Times New Roman', 'DefaultTextFontName', 'Times New Roman', ...
+         'DefaultLegendFontName', 'Times New Roman', 'DefaultColorbarFontName', 'Times New Roman');
+end
+
+function ExportPanel(fig, stem)
+exportgraphics(fig, [stem '.pdf'], 'ContentType','vector', 'Padding', 12);   % tight crop clips LaTeX tick labels
+fprintf('wrote %s.pdf\n', stem);
+end
+
+function StyleAxis(ax, labels, gridInk, inkPrimary, inkSecondary, subSize)
+% subSize: font size for the parenthetical second line, drawn as its own text
+% so it is not locked to 70% of the tick size by \scriptstyle
+if nargin < 6, subSize = 12.3; end
 % LaTeX tick labels.  A parenthetical goes onto a second line inside a
 % centred array, so both lines are centred on the tick (with the tex
 % interpreter the second line was left-aligned to the first).
-set(ax, 'XTick', 1:numel(labels), 'XTickLabel', LatexTickLabels(labels), ...
-        'TickLabelInterpreter','latex', 'FontSize', 13, ...
+set(ax, 'XTick', 1:numel(labels), 'XTickLabel', LatexTickLabels(labels, subSize), ...
+        'TickLabelInterpreter','latex', 'FontSize', 16, ...   % 17+ makes the kappa labels collide
         'XColor', inkSecondary, 'YColor', inkSecondary, ...
-        'Box','off', 'TickDir','out', 'Layer','top');
+        'Box','on', 'LineWidth', 0.9, 'TickDir','out', 'Layer','top');   % full frame, as in the original paper figures
 ax.YGrid = 'on'; ax.XGrid = 'off';
+ax.YMinorGrid = 'on';   % the faint lines between the labelled ticks
+ax.MinorGridAlpha = 0.275;
 ax.GridColor = gridInk; ax.GridAlpha = 1; ax.GridLineStyle = '-';
 ax.XTickLabelRotation = 0;
-xlim(ax, [0.4 numel(labels)+0.75]);
+xlim(ax, [0.45 numel(labels)+0.5]);   % CENT needs less right margin than 'Centralized' did
 hSep = xline(ax, 1.5:1:numel(labels)-0.5, '-', 'Color', [0.74 0.74 0.72], 'LineWidth', 0.9, 'HandleVisibility', 'off');
 uistack(hSep, 'bottom');   % method separators behind the data   % extra room: the last LaTeX tick label was clipped
 ax.XLabel.Color = inkPrimary;
+AddSubLabels(ax, labels, subSize, inkSecondary);
 end
 
-function out = LatexTickLabels(labels)
+function AddSubLabels(ax, labels, subSize, ink)
+% "FCFS (reactive)" -> "(reactive)" under the tick, in normalized axes units so
+% it sits correctly on a log y axis too
+if subSize <= 0, return; end
+xl = xlim(ax);
+for k = 1:numel(labels)
+    tok = regexp(strtrim(regexprep(labels{k}, 'MILP', '')), '^(.*?)\s*\((.*)\)$', 'tokens', 'once');
+    if isempty(tok), continue; end
+    text(ax, (k - xl(1))/diff(xl), -0.085, ['(' tok{2} ')'], 'Units', 'normalized', ...
+         'HorizontalAlignment', 'center', 'VerticalAlignment', 'top', ...
+         'FontName', 'Times New Roman', 'FontSize', subSize, 'Color', ink, 'Clipping', 'off');
+end
+end
+
+function out = LatexTickLabels(labels, subSize)
+if nargin < 2, subSize = 0; end
 out = cell(size(labels));
 for k = 1:numel(labels)
-    s = strtrim(regexprep(labels{k}, 'MILP', ''));     % "Centralized MILP" -> "Centralized"
+    % "Centralized MILP" is abbreviated to CENT, on one line and without a
+    % parenthetical: spelled out it is the widest tick and runs into the FCFS
+    % label beside it at this panel width
+    s = regexprep(labels{k}, '^Centralized\s+MILP$', 'CENT');
     if contains(s, '\kappa')
         out{k} = ['$' s '$'];
     else
         tok = regexp(s, '^(.*?)\s*\((.*)\)$', 'tokens', 'once');
         if isempty(tok)
             out{k} = s;
+        elseif subSize > 0
+            out{k} = ['$\mathrm{' tok{1} '}$'];   % parenthetical drawn by AddSubLabels
         else
-            out{k} = ['$\begin{array}{c}\mathrm{' tok{1} '}\\\mathrm{(' tok{2} ')}\end{array}$'];
+            % \scriptstyle, not \footnotesize: MATLAB's latex interpreter
+            % silently drops the text-mode size commands
+            out{k} = ['$\begin{array}{c}\mathrm{' tok{1} '}\\\scriptstyle\mathrm{(' tok{2} ')}\end{array}$'];
         end
     end
 end

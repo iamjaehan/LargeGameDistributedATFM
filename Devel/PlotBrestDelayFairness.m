@@ -78,7 +78,7 @@ ax2 = nexttile(tl);
 BoxDots(ax2, gini, colors, inkPrimary, inkSecondary);
 StyleAxis(ax2, S.labels, gridInk, inkPrimary, inkSecondary);
 ylim(ax2, [0, min(1, max(gini(:), [], 'omitnan')*1.15)]);
-ylabel(ax2, 'Gini index of mean delay per sector [-]', 'FontSize', 14, 'Color', inkPrimary);
+ylabel(ax2, 'Gini index', 'FontSize', 14, 'Color', inkPrimary);
 
 exportgraphics(fig, [outStem '.pdf'], 'ContentType','vector', 'Padding', 12);   % tight crop clips LaTeX tick labels
 exportgraphics(fig, [outStem '.png'], 'Resolution', 300, 'Padding', 12);

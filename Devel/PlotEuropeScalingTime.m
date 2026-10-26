@@ -42,13 +42,19 @@ else
 end
 lo = max(mu - half, mu/20); hi = mu + half;                % keep the band positive on log axes
 
-cK0 = [0.70 0.81 0.93]*0.85; cK1 = [0.09 0.28 0.56]; cM = [0.30 0.30 0.28];
+% kappa = 0 and kappa = 1 get different HUES, not two steps of one blue ramp.
+% On the box-plot figures the kappa family shares a ramp because the boxes sit
+% in labelled, separate slots; here the series overlap on a log-log panel, and
+% two lightness steps of the same hue were not telling them apart.
+cK0 = [0.890 0.286 0.282];   % red: the self-interested case, which fails
+cK1 = [0.165 0.471 0.839];   % blue: cooperative, matching the kappa family elsewhere
+cM  = [0.30 0.30 0.28];      % the centralized reference stays neutral
 colors = [cK0; cK1; cM; cK0; cK1];
 markers = {'o', 's', 'd', 'o', 's'};
 styles = {'-', '-', '-', '--', '--'};
 labels = {'$\kappa = 0$ (total)', '$\kappa = 1$ (total)', '$\mathrm{Centralized}$', ...
           '$\kappa = 0$ (per agent)', '$\kappa = 1$ (per agent)'};
-inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36]; gridInk = [0.88 0.88 0.86];
+inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36]; gridInk = [0.79 0.79 0.77];   % ~10% darker than the MATLAB-ish default grey
 
 fig = figure('Color','w','Position',[10 10 760 520]);
 % Times for every non-LaTeX label (axis labels, legends, text, ticks); set on
@@ -65,22 +71,23 @@ if S > 1
 end
 h = gobjects(1,5);
 for k = 1:5
-    if k <= 3, face = colors(k,:); edge = 'w'; lw = 1.8; ms = 8;
-    else, face = 'w'; edge = colors(k,:); lw = 1.6; ms = 7; end
+    if k <= 3, face = colors(k,:); edge = 'w'; lw = 2.0; ms = 11;
+    else, face = 'w'; edge = colors(k,:); lw = 1.7; ms = 9; end
     h(k) = plot(ax, n, mu(:,k), [styles{k} markers{k}], 'Color', colors(k,:), 'LineWidth', lw, ...
                 'MarkerSize', ms, 'MarkerFaceColor', face, 'MarkerEdgeColor', edge);
 end
 set(ax, 'XTick', n, 'XTickLabel', compose('%d', n), ...
-        'TickLabelInterpreter','latex', 'FontSize', 13, ...
-        'XColor', inkSecondary, 'YColor', inkSecondary, 'Box','off', 'TickDir','out', 'Layer','top');
+        'TickLabelInterpreter','latex', 'FontSize', 16, ...
+        'XColor', inkSecondary, 'YColor', inkSecondary, 'Box','on', 'LineWidth', 0.9, 'TickDir','out', 'Layer','top');
 ax.XGrid = 'on'; ax.YGrid = 'on'; ax.GridColor = gridInk; ax.GridAlpha = 1;
-ax.XMinorGrid = 'off'; ax.YMinorGrid = 'off';
+ax.XMinorGrid = 'on'; ax.YMinorGrid = 'on';   % the 2..9 lines inside each decade
+ax.MinorGridAlpha = 0.275;
 xlim(ax, [n(1)/1.4, n(end)*1.4]);
 yl = [min(lo(:)), max(hi(:))];
 ylim(ax, [10^floor(log10(yl(1))), 10^ceil(log10(yl(2)))]);
-xlabel(ax, 'Number of aircraft', 'FontSize', 14, 'Color', inkPrimary);
-ylabel(ax, 'Computation time [s]', 'FontSize', 14, 'Color', inkPrimary);
-legend(ax, h, labels, 'Interpreter','latex', 'Location','northwest', 'Box','on', 'EdgeColor', [0.72 0.72 0.70], 'Color', 'w', 'FontSize', 12);
+xlabel(ax, 'Number of aircraft', 'FontSize', 17, 'Color', inkPrimary);
+ylabel(ax, 'Computation time [s]', 'FontSize', 17, 'Color', inkPrimary);
+legend(ax, h, labels, 'Interpreter','latex', 'Location','northwest', 'Box','on', 'EdgeColor', [0.72 0.72 0.70], 'Color', 'w', 'FontSize', 13);
 
 exportgraphics(fig, [outStem '.pdf'], 'ContentType','vector', 'Padding', 12);
 exportgraphics(fig, [outStem '.png'], 'Resolution', 300, 'Padding', 12);
