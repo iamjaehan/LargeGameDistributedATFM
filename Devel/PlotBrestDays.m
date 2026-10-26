@@ -39,8 +39,9 @@ cInit = [0.84 0.47 0.44];
 inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36];
 gridInk = [0.88 0.88 0.86];
 
-fig = figure('Color','w','Position',[80 80 1240 480]);
+fig = figure('Color','w','Position',[10 10 1400 500]);
 tl = tiledlayout(fig, 1, 2, 'TileSpacing','compact', 'Padding','compact');
+tl.OuterPosition = [0 0 0.98 1];   % right margin so the last (LaTeX) tick label is not clipped
 
 % ===================== (a) overload cost =================================
 % Normalised by each day's OWN initial overload, so day difficulty divides
@@ -59,15 +60,16 @@ yline(ax1, 1, '--', 'no reduction', 'Color', cInit, 'LineWidth', 1.1, ...
 for k = 1:nA
     v = dataA(:,k); v = v(~isnan(v));
     if isempty(v), continue; end
-    boxchart(ax1, repmat(k, numel(v), 1), v, ...
-        'BoxFaceColor', colorsA(k,:), 'BoxFaceAlpha', 0.55, ...
-        'WhiskerLineColor', colorsA(k,:)*0.7, 'LineWidth', 1.0, ...
-        'MarkerStyle', 'none', 'BoxWidth', 0.56);
+    % days first, translucent box on top, so the box never hides a point
     % every day as a dot, jittered so overlapping days stay countable
     jit = (rand(numel(v),1) - 0.5) * 0.26;
-    scatter(ax1, k + jit, v, 16, 'filled', ...
-        'MarkerFaceColor', colorsA(k,:)*0.55, 'MarkerFaceAlpha', 0.55, ...
+    scatter(ax1, k + jit, v, 7, 'filled', ...
+        'MarkerFaceColor', colorsA(k,:)*0.55, 'MarkerFaceAlpha', 0.7, ...
         'MarkerEdgeColor', 'w', 'LineWidth', 0.3);
+    boxchart(ax1, repmat(k, numel(v), 1), v, ...
+        'BoxFaceColor', colorsA(k,:), 'BoxFaceAlpha', 0.25, ...
+        'WhiskerLineColor', colorsA(k,:)*0.7, 'LineWidth', 1.0, ...
+        'MarkerStyle', 'none', 'BoxWidth', 0.56);
 end
 
 % mean alongside the median line the box already draws
@@ -80,10 +82,10 @@ hDay = scatter(ax1, nan, nan, 16, 'filled', ...
     'MarkerEdgeColor','w', 'LineWidth', 0.3);
 
 StyleAxis(ax1, labelsA, gridInk, inkPrimary, inkSecondary);
-ylim(ax1, [0, max(1.06, max(dataA(:),[],'omitnan')*1.06)]);
+ylim(ax1, [0, max(1.18, max(dataA(:),[],'omitnan')*1.06)]);   % room for the legend above the 'no reduction' line
 legend(ax1, [hDay hMeanA], {'one day', 'mean'}, 'Location','northwest', ...
        'Box','off', 'FontSize', 9, 'TextColor', inkSecondary);
-ylabel(ax1, 'Overload cost / initial  [-]', 'FontSize', 11, 'Color', inkPrimary);
+ylabel(ax1, 'Overload cost / initial  [-]', 'FontSize', 14, 'Color', inkPrimary);
 
 % ===================== (b) computation time ==============================
 ax2 = nexttile(tl); hold(ax2,'on');
@@ -92,15 +94,16 @@ colorsB = [cK; cBase];
 for k = 1:nM
     v = S.comptime(:,k); v = v(~isnan(v));
     if isempty(v), continue; end
-    boxchart(ax2, repmat(k, numel(v), 1), v, ...
-        'BoxFaceColor', colorsB(k,:), 'BoxFaceAlpha', 0.55, ...
-        'WhiskerLineColor', colorsB(k,:)*0.7, 'LineWidth', 1.0, ...
-        'MarkerStyle', 'none', 'BoxWidth', 0.56);
+    % days first, translucent box on top, so the box never hides a point
     % every day as a dot, as in (a), so days beyond the whiskers stay visible
     jit = (rand(numel(v),1) - 0.5) * 0.26;
-    scatter(ax2, k + jit, v, 16, 'filled', ...
-        'MarkerFaceColor', colorsB(k,:)*0.55, 'MarkerFaceAlpha', 0.55, ...
+    scatter(ax2, k + jit, v, 7, 'filled', ...
+        'MarkerFaceColor', colorsB(k,:)*0.55, 'MarkerFaceAlpha', 0.7, ...
         'MarkerEdgeColor', 'w', 'LineWidth', 0.3);
+    boxchart(ax2, repmat(k, numel(v), 1), v, ...
+        'BoxFaceColor', colorsB(k,:), 'BoxFaceAlpha', 0.25, ...
+        'WhiskerLineColor', colorsB(k,:)*0.7, 'LineWidth', 1.0, ...
+        'MarkerStyle', 'none', 'BoxWidth', 0.56);
 end
 
 % mean alongside the median (boxchart draws the median line itself)
@@ -116,15 +119,15 @@ if max(allT)/max(min(allT), eps) > 50
 end
 
 StyleAxis(ax2, S.labels, gridInk, inkPrimary, inkSecondary);
-ylabel(ax2, 'Computation time [s]', 'FontSize', 11, 'Color', inkPrimary);
+ylabel(ax2, 'Computation time [s]', 'FontSize', 14, 'Color', inkPrimary);
 hDayB = scatter(ax2, nan, nan, 16, 'filled', ...
     'MarkerFaceColor', [0.45 0.45 0.45], 'MarkerFaceAlpha', 0.55, ...
     'MarkerEdgeColor','w', 'LineWidth', 0.3);
 legend(ax2, [hDayB hMean], {'one day', 'mean'}, 'Location','northwest', 'Box','off', ...
        'FontSize', 9, 'TextColor', inkSecondary);
 
-exportgraphics(fig, [outStem '.pdf'], 'ContentType','vector');
-exportgraphics(fig, [outStem '.png'], 'Resolution', 300);
+exportgraphics(fig, [outStem '.pdf'], 'ContentType','vector', 'Padding', 12);   % tight crop clips LaTeX tick labels
+exportgraphics(fig, [outStem '.png'], 'Resolution', 300, 'Padding', 12);
 fprintf('wrote %s.pdf / %s.png\n', outStem, outStem);
 
 % ---- table view so the figure is never the only way to read the numbers
@@ -146,13 +149,15 @@ function StyleAxis(ax, labels, gridInk, inkPrimary, inkSecondary)
 % centred array, so both lines are centred on the tick (with the tex
 % interpreter the second line was left-aligned to the first).
 set(ax, 'XTick', 1:numel(labels), 'XTickLabel', LatexTickLabels(labels), ...
-        'TickLabelInterpreter','latex', 'FontSize', 11, ...
+        'TickLabelInterpreter','latex', 'FontSize', 13, ...
         'XColor', inkSecondary, 'YColor', inkSecondary, ...
         'Box','off', 'TickDir','out', 'Layer','top');
 ax.YGrid = 'on'; ax.XGrid = 'off';
 ax.GridColor = gridInk; ax.GridAlpha = 1; ax.GridLineStyle = '-';
 ax.XTickLabelRotation = 0;
-xlim(ax, [0.4 numel(labels)+0.6]);
+xlim(ax, [0.4 numel(labels)+0.75]);
+hSep = xline(ax, 1.5:1:numel(labels)-0.5, '-', 'Color', [0.74 0.74 0.72], 'LineWidth', 0.9, 'HandleVisibility', 'off');
+uistack(hSep, 'bottom');   % method separators behind the data   % extra room: the last LaTeX tick label was clipped
 ax.XLabel.Color = inkPrimary;
 end
 

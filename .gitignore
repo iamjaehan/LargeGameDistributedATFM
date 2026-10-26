@@ -16,6 +16,12 @@ Devel/*.gif
 !Devel/BrestDays_D7.pdf
 !Devel/BrestDelayFairness_D7.png
 !Devel/BrestDelayFairness_D7.pdf
+!Devel/BrestDelayFairnessCompare_D7.png
+!Devel/BrestDelayFairnessCompare_D7.pdf
+!Devel/BrestDays_D7_tiebreak.png
+!Devel/BrestDays_D7_tiebreak.pdf
+!Devel/BrestDelayFairness_D7_tiebreak.png
+!Devel/BrestDelayFairness_D7_tiebreak.pdf
 
 # Scratch experiment drivers
 Devel/*_tmp.m

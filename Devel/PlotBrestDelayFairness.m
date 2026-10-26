@@ -60,23 +60,24 @@ colors = [cK; cBase];
 inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36];
 gridInk = [0.88 0.88 0.86];
 
-fig = figure('Color','w','Position',[80 80 1240 480]);
+fig = figure('Color','w','Position',[10 10 1400 500]);
 tl = tiledlayout(fig, 1, 2, 'TileSpacing','compact', 'Padding','compact');
+tl.OuterPosition = [0 0 0.98 1];   % right margin so the last (LaTeX) tick label is not clipped
 
 ax1 = nexttile(tl);
 BoxDots(ax1, delayPerAc, colors, inkPrimary, inkSecondary);
 StyleAxis(ax1, S.labels, gridInk, inkPrimary, inkSecondary);
 ylim(ax1, [0, max(delayPerAc(:), [], 'omitnan')*1.15]);   % headroom for the legend
-ylabel(ax1, 'Average delay per aircraft [min]', 'FontSize', 11, 'Color', inkPrimary);
+ylabel(ax1, 'Average delay per aircraft [min]', 'FontSize', 14, 'Color', inkPrimary);
 
 ax2 = nexttile(tl);
 BoxDots(ax2, gini, colors, inkPrimary, inkSecondary);
 StyleAxis(ax2, S.labels, gridInk, inkPrimary, inkSecondary);
 ylim(ax2, [0, min(1, max(gini(:), [], 'omitnan')*1.15)]);
-ylabel(ax2, 'Gini index of mean delay per sector [-]', 'FontSize', 11, 'Color', inkPrimary);
+ylabel(ax2, 'Gini index of mean delay per sector [-]', 'FontSize', 14, 'Color', inkPrimary);
 
-exportgraphics(fig, [outStem '.pdf'], 'ContentType','vector');
-exportgraphics(fig, [outStem '.png'], 'Resolution', 300);
+exportgraphics(fig, [outStem '.pdf'], 'ContentType','vector', 'Padding', 12);   % tight crop clips LaTeX tick labels
+exportgraphics(fig, [outStem '.png'], 'Resolution', 300, 'Padding', 12);
 fprintf('wrote %s.pdf / %s.png\n', outStem, outStem);
 
 % ---- table view ----------------------------------------------------------
@@ -102,14 +103,15 @@ nM = size(data, 2);
 for k = 1:nM
     v = data(:,k); v = v(~isnan(v));
     if isempty(v), continue; end
+    % days first, translucent box on top, so the box never hides a point
+    jit = (rand(numel(v),1) - 0.5) * 0.26;
+    scatter(ax, k + jit, v, 7, 'filled', ...
+        'MarkerFaceColor', colors(k,:)*0.55, 'MarkerFaceAlpha', 0.7, ...
+        'MarkerEdgeColor', 'w', 'LineWidth', 0.3);
     boxchart(ax, repmat(k, numel(v), 1), v, ...
-        'BoxFaceColor', colors(k,:), 'BoxFaceAlpha', 0.55, ...
+        'BoxFaceColor', colors(k,:), 'BoxFaceAlpha', 0.25, ...
         'WhiskerLineColor', colors(k,:)*0.7, 'LineWidth', 1.0, ...
         'MarkerStyle', 'none', 'BoxWidth', 0.56);
-    jit = (rand(numel(v),1) - 0.5) * 0.26;
-    scatter(ax, k + jit, v, 16, 'filled', ...
-        'MarkerFaceColor', colors(k,:)*0.55, 'MarkerFaceAlpha', 0.55, ...
-        'MarkerEdgeColor', 'w', 'LineWidth', 0.3);
 end
 hMean = plot(ax, 1:nM, mean(data, 1, 'omitnan'), 'd', 'MarkerSize', 7, ...
     'MarkerFaceColor', 'w', 'MarkerEdgeColor', inkPrimary, 'LineWidth', 1.1, 'LineStyle', 'none');
@@ -124,13 +126,15 @@ function StyleAxis(ax, labels, gridInk, inkPrimary, inkSecondary)
 % centred array, so both lines are centred on the tick (with the tex
 % interpreter the second line was left-aligned to the first).
 set(ax, 'XTick', 1:numel(labels), 'XTickLabel', LatexTickLabels(labels), ...
-        'TickLabelInterpreter','latex', 'FontSize', 11, ...
+        'TickLabelInterpreter','latex', 'FontSize', 13, ...
         'XColor', inkSecondary, 'YColor', inkSecondary, ...
         'Box','off', 'TickDir','out', 'Layer','top');
 ax.YGrid = 'on'; ax.XGrid = 'off';
 ax.GridColor = gridInk; ax.GridAlpha = 1; ax.GridLineStyle = '-';
 ax.XTickLabelRotation = 0;
-xlim(ax, [0.4 numel(labels)+0.6]);
+xlim(ax, [0.4 numel(labels)+0.75]);
+hSep = xline(ax, 1.5:1:numel(labels)-0.5, '-', 'Color', [0.74 0.74 0.72], 'LineWidth', 0.9, 'HandleVisibility', 'off');
+uistack(hSep, 'bottom');   % method separators behind the data   % extra room: the last LaTeX tick label was clipped
 ax.XLabel.Color = inkPrimary;
 end
 
