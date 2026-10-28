@@ -1,5 +1,6 @@
 function ExportPaperFigures(outDir)
-% Write the four paper figures as six single-panel PDFs.
+% Write the paper figures as PDFs: six single panels, the scaling panel and
+% the full-page one-day qualitative figure.
 %
 %   ExportPaperFigures                       % into ../Analysis/revised figure
 %
@@ -10,6 +11,8 @@ function ExportPaperFigures(outDir)
 %   CostComparison_D10   TimeComparison_D10    <- BrestDays_D10
 %   DelayCompare         GiniCompare           <- BrestDelayFairnessCompare_D7
 %   EuropeScalingTime
+%   Qualitative_D10      <- PlotBrestQualitative (one day, 230730, full page)
+%   TDP_Europe  TDP_BREST   <- PlotTrafficDemand (BREST: 230730)
 
 if nargin < 1 || isempty(outDir), outDir = fullfile('..','Analysis','revised figure'); end
 if ~isfolder(outDir), mkdir(outDir); end
@@ -25,6 +28,12 @@ PlotEuropeScalingTime();                       % one panel already; writes next 
 close all
 copyfile('EuropeScalingTime.pdf', fullfile(outDir, 'EuropeScalingTime.pdf'));
 fprintf('wrote %s\n', fullfile(outDir, 'EuropeScalingTime.pdf'));
+PlotBrestQualitative('230730', 'exp_brest_days_D10.mat', [], fullfile(outDir, 'Qualitative_D10.pdf'));
+close all
+PlotTrafficDemand('europe', '', fullfile(outDir, 'TDP_Europe.pdf'));
+close all
+PlotTrafficDemand('brest', '230730', fullfile(outDir, 'TDP_BREST.pdf'));   % the qualitative day
+close all
 
 d = dir(fullfile(outDir, '*.pdf'));
 fprintf('\n%s contains %d PDFs:\n', outDir, numel(d));

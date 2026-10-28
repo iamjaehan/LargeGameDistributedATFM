@@ -52,7 +52,7 @@ cM  = [0.30 0.30 0.28];      % the centralized reference stays neutral
 colors = [cK0; cK1; cM; cK0; cK1];
 markers = {'o', 's', 'd', 'o', 's'};
 styles = {'-', '-', '-', '--', '--'};
-labels = {'$\kappa = 0$ (total)', '$\kappa = 1$ (total)', '$\mathrm{Centralized}$', ...
+labels = {'$\kappa = 0$ (total)', '$\kappa = 1$ (total)', '\texttt{CENT}', ...
           '$\kappa = 0$ (per agent)', '$\kappa = 1$ (per agent)'};
 inkPrimary = [0.11 0.11 0.11]; inkSecondary = [0.38 0.38 0.36]; gridInk = [0.79 0.79 0.77];   % ~10% darker than the MATLAB-ish default grey
 

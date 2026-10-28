@@ -174,11 +174,14 @@ x0 = X(0.03); y1 = Y(0.94); y2 = Y(0.875);
 t = gobjects(1,4);
 nBefore = numel(ax.Children);
 patch(ax, x0 + [0 w w 0], y1 + [0 0 h h] - h/2, g, 'FaceAlpha', 0.25, 'EdgeColor', g, 'LineWidth', 1.2);
-t(1) = text(ax, x0 + 1.4*w, y1, 'without tie-break', 'FontSize', 13, 'Color', inkSecondary);
+t(1) = text(ax, x0 + 1.4*w, y1, 'without delay refinement', 'FontSize', 13, 'Color', inkSecondary);
 Hatch(ax, x0, x0 + w, y2 - h/2, y2 + h/2, g*0.7);
 patch(ax, x0 + [0 w w 0], y2 + [0 0 h h] - h/2, 'w', 'FaceColor', 'none', 'EdgeColor', g, 'LineWidth', 1.2);
-t(2) = text(ax, x0 + 1.4*w, y2, 'with tie-break', 'FontSize', 13, 'Color', inkSecondary);
-x1 = X(0.30);
+t(2) = text(ax, x0 + 1.4*w, y2, 'with delay refinement', 'FontSize', 13, 'Color', inkSecondary);
+% second column starts after the longer first-column label
+drawnow;
+e12 = vertcat(t(1:2).Extent);
+x1 = max(e12(:,1) + e12(:,3)) + 0.025*diff(xl);
 scatter(ax, x1 + w/2, y1, 14, 'filled', 'MarkerFaceColor', [0.45 0.45 0.45], 'MarkerFaceAlpha', 0.55, 'MarkerEdgeColor', 'w');
 t(3) = text(ax, x1 + 1.4*w, y1, 'one day', 'FontSize', 13, 'Color', inkSecondary);
 plot(ax, x1 + w/2, y2, 'd', 'MarkerSize', 6, 'MarkerFaceColor', 'w', 'MarkerEdgeColor', inkPrimary, 'LineWidth', 1.0);
@@ -197,7 +200,7 @@ end
 function StyleAxis(ax, labels, gridInk, inkPrimary, inkSecondary, subSize)
 % subSize: font size for the parenthetical second line, drawn as its own text
 % so it is not locked to 70% of the tick size by \scriptstyle
-if nargin < 6, subSize = 12.3; end
+if nargin < 6, subSize = 13.53; end   % 12.3 + 10%
 set(ax, 'XTick', 1:numel(labels), 'XTickLabel', LatexTickLabels(labels, subSize), ...
         'TickLabelInterpreter','latex', 'FontSize', 16, ...   % 17+ makes the kappa labels collide
         'XColor', inkSecondary, 'YColor', inkSecondary, ...
@@ -239,13 +242,13 @@ for k = 1:numel(labels)
     else
         tok = regexp(s, '^(.*?)\s*\((.*)\)$', 'tokens', 'once');
         if isempty(tok)
-            out{k} = s;
+            out{k} = ['\texttt{' s '}'];             % CENT: method names in typewriter
         elseif subSize > 0
-            out{k} = ['$\mathrm{' tok{1} '}$'];   % parenthetical drawn by AddSubLabels
+            out{k} = ['\texttt{' tok{1} '}'];     % FCFS in typewriter; parenthetical drawn by AddSubLabels
         else
             % \scriptstyle, not \footnotesize: MATLAB's latex interpreter
             % silently drops the text-mode size commands
-            out{k} = ['$\begin{array}{c}\mathrm{' tok{1} '}\\\scriptstyle\mathrm{(' tok{2} ')}\end{array}$'];
+            out{k} = ['$\begin{array}{c}\texttt{' tok{1} '}\\\scriptstyle\mathrm{(' tok{2} ')}\end{array}$'];
         end
     end
 end

@@ -236,13 +236,13 @@ for k = 1:numel(labels)
     else
         tok = regexp(s, '^(.*?)\s*\((.*)\)$', 'tokens', 'once');
         if isempty(tok)
-            out{k} = s;
+            out{k} = ['\texttt{' s '}'];             % CENT: method names in typewriter
         elseif subSize > 0
-            out{k} = ['$\mathrm{' tok{1} '}$'];   % parenthetical drawn by AddSubLabels
+            out{k} = ['\texttt{' tok{1} '}'];     % FCFS in typewriter; parenthetical drawn by AddSubLabels
         else
             % \scriptstyle, not \footnotesize: MATLAB's latex interpreter
             % silently drops the text-mode size commands
-            out{k} = ['$\begin{array}{c}\mathrm{' tok{1} '}\\\scriptstyle\mathrm{(' tok{2} ')}\end{array}$'];
+            out{k} = ['$\begin{array}{c}\texttt{' tok{1} '}\\\scriptstyle\mathrm{(' tok{2} ')}\end{array}$'];
         end
     end
 end
